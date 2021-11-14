@@ -20,6 +20,9 @@ process.once("loaded", () => {
             "write_file": (filepath, content, on_success, on_fail) => {
                 ipcRenderer.invoke('write-file-ipc', filepath, content).then(result=>on_success(result)).catch(err=>on_fail(err));
             },
+            "download": (url, options) => {
+                ipcRenderer.send('download-ipc', url, options);
+            },
             "versions": process.versions
         }
     );

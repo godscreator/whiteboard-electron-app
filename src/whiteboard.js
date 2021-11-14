@@ -2,90 +2,9 @@ import "./whiteboard_styles.css";
 import React, { useState, useRef } from "react";
 
 import Toolbox from "./toolbox.js";
-import Topbar from "./topbar";
- 
+import Topbar from "./file_menu.js";
+import * as draw from './draw_util.js';
 
-const downloadCanvas = (downloadref, canvasref) => {
-    if (canvasref.current !== null && downloadref.current !== null) {
-        var dataURL = canvasref.current.toDataURL('image/png', 1.0);
-        downloadref.current.href = dataURL;
-        downloadref.current.download = "fine.png";
-        downloadref.current.click();
-    }
-}
-const drawFree = (context, points, radius, color) => {
-    if (points.length >= 2) {
-        context.lineCap = "round";
-        context.lineJoin = "round";
-        context.lineWidth = radius;
-        context.strokeStyle = color;
-        context.beginPath();
-        var p = points[points.length - 2];
-        context.moveTo(p.x, p.y);
-        var q = points[points.length - 1];
-        context.lineTo(q.x, q.y);
-        context.stroke();
-        context.closePath();
-    }
-
-}
-
-const drawShape = (context, points, radius, color, type) => {
-    if (points.length === 2) {
-        context.beginPath();
-        context.lineWidth = radius;
-        context.strokeStyle = color;
-        const { x: startX, y: startY } = points[0];
-        const { x: toX, y: toY } = points[1];
-        switch (type) {
-            case "rect":
-                context.rect(startX, startY, toX - startX, toY - startY);
-                break;
-            case "fill rect":
-                context.rect(startX, startY, toX - startX, toY - startY);
-                context.fillStyle = color;
-                context.fill();
-                break;
-            case "circle":
-                context.arc(startX, startY, Math.hypot(toX - startX, toY - startY), 0, 2 * Math.PI);
-                break;
-            case "fill circle":
-                context.arc(startX, startY, Math.hypot(toX - startX, toY - startY), 0, 2 * Math.PI);
-                context.fillStyle = color;
-                context.fill();
-                break;
-            case "line":
-                context.beginPath();
-                context.moveTo(startX, startY);
-                context.lineTo(toX, toY);
-                break;
-            default:
-
-        }
-
-        context.stroke();
-        context.closePath();
-    }
-}
-
-const eraseFree = (context, points, radius) => {
-    if (points.length > 2) {
-        const o = points[points.length - 2];
-        const p = points[points.length - 1];
-        var t = o;
-        var diff = Math.max(Math.abs(p.x - t.x), Math.abs(p.y - t.y));
-        while (diff >= 1) {
-            context.clearRect(t.x - radius / 2, t.y - radius / 2, radius, radius);
-            if (t.x < p.x) t.x++;
-            if (t.x > p.x) t.x--;
-            if (t.y > p.y) t.y--;
-            if (t.y < p.y) t.y++;
-            diff = Math.max(Math.abs(p.x - t.x), Math.abs(p.y - t.y));
-        }
-
-    }
-    context.closePath();
-}
 
 export default function Whiteboard() {
 
@@ -95,8 +14,7 @@ export default function Whiteboard() {
     const [points, setPoints] = useState([]);
     const canvasref = useRef(null);
     const canvasref2 = useRef(null);
-    const downloadref = useRef(null);
-
+  
     let img_array = [];
 
     const point_wrt_canvas = (pos) => {
@@ -112,6 +30,27 @@ export default function Whiteboard() {
         }
     }
 
+    const clear = () => {
+        const canvas = canvasref.current;
+        const context = canvas.getContext('2d');
+        const canvas2 = canvasref2.current;
+        const context2 = canvas2.getContext("2d");
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context2.clearRect(0, 0, canvas2.width, canvas2.height);
+        img_array = [];
+    };
+
+    const load = () => {
+
+    }
+
+    const get_image_url = () => {
+        if (canvasref.current !== null) {
+            return canvasref.current.toDataURL('image/png', 1.0);
+        }
+        return "";
+    }
+
     const brush = (action, point) => {
         const canvas = canvasref.current;
         const context = canvas.getContext('2d');
@@ -124,7 +63,7 @@ export default function Whiteboard() {
 
             case "mouse_move":
                 setPoints(points.concat([point]));
-                drawFree(context, points, tool.radius, tool.color);
+                draw.freehand(context, points, tool.radius, tool.color);
                 break;
 
             case "mouse_up":
@@ -147,7 +86,7 @@ export default function Whiteboard() {
 
             case "mouse_move":
                 setPoints(points.concat([point]));
-                eraseFree(context, points, tool.radius);
+                draw.erase(context, points, tool.radius);
                 break;
 
             case "mouse_up":
@@ -173,90 +112,18 @@ export default function Whiteboard() {
             case "mouse_move":
                 context2.clearRect(0, 0, canvas2.width, canvas2.height);
                 const new_points = points.concat([point]);
-                drawShape(context2, new_points, tool.radius, tool.color, tool.type);
+                draw.shape(context2, new_points, tool.radius, tool.color, tool.type);
                 break;
 
             case "mouse_up":
                 setPoints(points.concat([point]));
-                drawShape(context, points.concat([point]), tool.radius, tool.color, tool.type);
+                draw.shape(context, points.concat([point]), tool.radius, tool.color, tool.type);
                 img_array.push({ ...tool, points: points });
                 setPoints([]);
                 break;
             default:
         }
     };
-    const clear = () => {
-        const canvas = canvasref.current;
-        const context = canvas.getContext('2d');
-        const canvas2 = canvasref2.current;
-        const context2 = canvas2.getContext("2d");
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context2.clearRect(0, 0, canvas2.width, canvas2.height);
-        img_array = [];
-    };
-    const open = () => {
-        window.electron.open_dialog({
-            properties: ['openFile'],
-            filters: [
-                { name: 'Text', extensions: ['txt'] },
-                { name: 'JSON', extensions: ['json'] },
-            ]
-            },
-            result => {
-                var filepath = result[0];
-                window.electron.read_file(filepath, 'utf-8',
-                    result => {
-                        console.log("The file content is : " + result);
-                    },
-                    err => console.log(err)
-                );
-            },
-            err => {
-                console.log(err);
-            }
-        );
-    };
-
-    const save = () => {
-        window.electron.save_dialog({
-            filters: [
-                { name: 'Text', extensions: ['txt'] },
-                { name: 'JSON', extensions: ['json'] },
-            ],
-            defaultPath:"henlo.txt"
-        },
-            result => {
-                var filepath = result;
-                window.electron.write_file(filepath, "henlo mr dj",
-                    result => {
-                        console.log("The result : " + result);
-                    },
-                    err => console.log(err)
-                );
-            },
-            err=>console.log(err)
-        );
-    }
-
-
-    const save_as = () => {
-        window.electron.save_dialog({
-            filters: [
-                { name: 'Image', extensions: ['jpg', 'png', 'gif'] },
-            ]
-        },
-            result => {
-                var filepath = result;
-                window.electron.write_file(filepath, "henlo mr dj",
-                    result => {
-                        console.log("The result : " + result);
-                    },
-                    err => console.log(err)
-                );
-            },
-            err => console.log(err)
-        );
-    }
 
     var fn_dict = {};
     fn_dict["brush"] = brush;
@@ -266,7 +133,7 @@ export default function Whiteboard() {
     return (
         <div id="container">
             <div id="topbar">
-                <Topbar clear={() => clear()} open={() => open()} save={() => save()} export_as={() => save_as()} />
+                <Topbar clear={() => clear()} load={() => load()} get_image_url={() => get_image_url()} />
             </div>
 
             <div id="toolbox">
@@ -312,7 +179,6 @@ export default function Whiteboard() {
                         style={{ cursor: canvasCursor }}
                     />
                 </div>
-                <div style={{ display: "none" }}><a href="#empty" ref={downloadref} onClick={() => downloadCanvas(downloadref, canvasref)}>Download</a></div>
             </div>
         </div>
     );

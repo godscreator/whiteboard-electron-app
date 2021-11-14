@@ -3,6 +3,7 @@ const { app, BrowserWindow, dialog, ipcMain} = require("electron");
 const path = require("path");
 const url = require("url");
 var fs = require('fs'); // Load the File System to execute our common tasks (CRUD)
+const { download } = require('electron-dl');
 
 // Create the native browser window.
 function createWindow() {
@@ -114,9 +115,9 @@ ipcMain.handle('read-file-ipc', async (event, filepath, options) => {
   return result;
 })
 
-const save_dialog = (filepath) => {
+const save_dialog = (options) => {
   return new Promise((resolve, reject) => {
-    var result = dialog.showSaveDialogSync(filepath);
+    var result = dialog.showSaveDialogSync(options);
     if (result) {
       resolve(result);
     } else {
@@ -150,3 +151,8 @@ ipcMain.handle('write-file-ipc', async (event, filepath, data) => {
   const result = await write_file(filepath, data);
   return result;
 })
+
+ipcMain.on('download-ipc', async (event, url, options) => {
+  const win = BrowserWindow.getFocusedWindow();
+  download(win, url, options);
+});
