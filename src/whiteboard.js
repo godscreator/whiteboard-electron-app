@@ -1,5 +1,7 @@
 import "./whiteboard_styles.css";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import html2canvas from "html2canvas";
+import { BsBrush, BsEraser, BsSquare, BsSquareFill, BsCircle, BsCircleFill } from "react-icons/bs";
 
 import Toolbox from "./toolbox.js";
 import Topbar from "./file_menu.js";
@@ -14,6 +16,16 @@ export default function Whiteboard() {
     const [points, setPoints] = useState([]);
     const canvasref = useRef(null);
     const canvasref2 = useRef(null);
+    const canvasref3 = useRef(null);
+    const canvas_width = 4096;
+    const canvas_height = 2048;
+
+    useEffect(() => {
+        const canvas = canvasref.current;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = "white";
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+    }, []);
   
     let img_array = [];
 
@@ -36,6 +48,8 @@ export default function Whiteboard() {
         const canvas2 = canvasref2.current;
         const context2 = canvas2.getContext("2d");
         context.clearRect(0, 0, canvas.width, canvas.height);
+        context.fillStyle = "white";
+        context.fillRect(0, 0, canvas.width, canvas.height);
         context2.clearRect(0, 0, canvas2.width, canvas2.height);
         img_array = [];
     };
@@ -45,10 +59,22 @@ export default function Whiteboard() {
     }
 
     const get_image_url = () => {
-        if (canvasref.current !== null) {
-            return canvasref.current.toDataURL('image/png', 1.0);
-        }
-        return "";
+        return new Promise(async (resolve, reject) => {
+            var img_url = "";
+            if (canvasref.current !== null && canvasref3.current !== null) {
+                const element = canvasref3.current;
+                const canvas3 = await html2canvas(element,{backgroundColor:null});
+                const canvas = canvasref.current;
+                const context = canvas.getContext("2d");
+                //const context3 = canvas3.getContext("2d");
+                console.log("canvas: " + canvas.width + "," + canvas.height);
+                //console.log("canvas3: " + canvas3.width + "," + canvas3.height);
+                context.drawImage(canvas3, 0, 0, canvas.width, canvas.height);
+                
+                img_url = canvas.toDataURL('image/png', 1.0);
+            }
+            resolve(img_url);
+        });
     }
 
     const brush = (action, point) => {
@@ -116,6 +142,7 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_up":
+                context2.clearRect(0, 0, canvas2.width, canvas2.height);
                 setPoints(points.concat([point]));
                 draw.shape(context, points.concat([point]), tool.radius, tool.color, tool.type);
                 img_array.push({ ...tool, points: points });
@@ -130,6 +157,10 @@ export default function Whiteboard() {
     fn_dict["eraser"] = eraser;
     fn_dict["shapes"] = shapes;
 
+    var comp_count = 1;
+    var list_comps = [<BsBrush key={"comp:" + comp_count++} />, <BsCircle key={"comp:" + comp_count++} />, <BsCircleFill key={"comp:" + comp_count++}/>];
+    var comps = list_comps.map((d) => d);
+
     return (
         <div id="container">
             <div id="topbar">
@@ -139,45 +170,47 @@ export default function Whiteboard() {
             <div id="toolbox">
                 <Toolbox onToolChangeHandler={(t) => setTool(t)} />
             </div>
-            <div id="boardcanvas">
+            <div id="boardcanvas"
+                onMouseDown={evt => {
+                    setIsDrawing(true);
+                    const action = "mouse_down";
+                    const point = point_wrt_canvas({ x: evt.clientX, y: evt.clientY });
+                    fn_dict[tool.name](action, point);
+                }}
+                onMouseUp={evt => {
+                    setIsDrawing(false);
+                    const action = "mouse_up";
+                    const point = point_wrt_canvas({ x: evt.clientX, y: evt.clientY });
+                    fn_dict[tool.name](action, point);
+                }}
+                onMouseMove={evt => {
+                    if (isDrawing) {
+                        const action = "mouse_move";
+                        const point = point_wrt_canvas({ x: evt.clientX, y: evt.clientY });
+                        fn_dict[tool.name](action, point);
+                    }
+                }}>
 
-                <div id="canvas">
+                <div id="canvas" className="board">
                     <canvas
                         className="white-board"
                         ref={canvasref}
-                        width="4096"
-                        height="3072"
+                        width={canvas_width} height={canvas_height}
                         style={{ cursor: canvasCursor }}
                     />
                 </div>
 
-                <div id="canvas2">
+                <div id="canvas2" className="board">
                     <canvas
                         className="white-board"
                         ref={canvasref2}
-                        onMouseDown={evt => {
-                            setIsDrawing(true);
-                            const action = "mouse_down";
-                            const point = point_wrt_canvas({ x: evt.clientX, y: evt.clientY });
-                            fn_dict[tool.name](action, point);
-                        }}
-                        onMouseUp={evt => {
-                            setIsDrawing(false);
-                            const action = "mouse_up";
-                            const point = point_wrt_canvas({ x: evt.clientX, y: evt.clientY });
-                            fn_dict[tool.name](action, point);
-                        }}
-                        onMouseMove={evt => {
-                            if (isDrawing) {
-                                const action = "mouse_move";
-                                const point = point_wrt_canvas({ x: evt.clientX, y: evt.clientY });
-                                fn_dict[tool.name](action, point);
-                            }
-                        }}
-                        width="4096"
-                        height="3072"
+                        
+                        width={canvas_width} height={canvas_height}
                         style={{ cursor: canvasCursor }}
                     />
+                </div>
+                <div id="canvas3" className="board" ref={canvasref3}>
+                    {comps}
                 </div>
             </div>
         </div>

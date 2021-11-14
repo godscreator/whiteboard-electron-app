@@ -71,8 +71,8 @@ export default function Topbar(props) {
     }
 
 
-    const export_png = () => {
-        var img_url = props.get_image_url();
+    const export_png = async () => {
+        var img_url = await props.get_image_url();
         if (img_url !== "") {
             window.electron.download(img_url, { filename: filename });
         }
