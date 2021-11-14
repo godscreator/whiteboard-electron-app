@@ -3,7 +3,7 @@ import React, { useState, useRef } from "react";
 
 import Toolbox from "./toolbox.js";
 import Topbar from "./topbar";
-
+ 
 
 const downloadCanvas = (downloadref, canvasref) => {
     if (canvasref.current !== null && downloadref.current !== null) {
@@ -195,16 +195,67 @@ export default function Whiteboard() {
         img_array = [];
     };
     const open = () => {
-
-
-
+        window.electron.open_dialog({
+            properties: ['openFile'],
+            filters: [
+                { name: 'Text', extensions: ['txt'] },
+                { name: 'JSON', extensions: ['json'] },
+            ]
+            },
+            result => {
+                var filepath = result[0];
+                window.electron.read_file(filepath, 'utf-8',
+                    result => {
+                        console.log("The file content is : " + result);
+                    },
+                    err => console.log(err)
+                );
+            },
+            err => {
+                console.log(err);
+            }
+        );
     };
+
     const save = () => {
-
-
+        window.electron.save_dialog({
+            filters: [
+                { name: 'Text', extensions: ['txt'] },
+                { name: 'JSON', extensions: ['json'] },
+            ],
+            defaultPath:"henlo.txt"
+        },
+            result => {
+                var filepath = result;
+                window.electron.write_file(filepath, "henlo mr dj",
+                    result => {
+                        console.log("The result : " + result);
+                    },
+                    err => console.log(err)
+                );
+            },
+            err=>console.log(err)
+        );
     }
+
+
     const save_as = () => {
-        
+        window.electron.save_dialog({
+            filters: [
+                { name: 'Image', extensions: ['jpg', 'png', 'gif'] },
+            ]
+        },
+            result => {
+                var filepath = result;
+                window.electron.write_file(filepath, "henlo mr dj",
+                    result => {
+                        console.log("The result : " + result);
+                    },
+                    err => console.log(err)
+                );
+            },
+            err => console.log(err)
+        );
     }
 
     var fn_dict = {};
@@ -228,7 +279,7 @@ export default function Whiteboard() {
                         className="white-board"
                         ref={canvasref}
                         width="4096"
-                        height="2048"
+                        height="3072"
                         style={{ cursor: canvasCursor }}
                     />
                 </div>
@@ -257,7 +308,7 @@ export default function Whiteboard() {
                             }
                         }}
                         width="4096"
-                        height="2048"
+                        height="3072"
                         style={{ cursor: canvasCursor }}
                     />
                 </div>

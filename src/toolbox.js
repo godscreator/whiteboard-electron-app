@@ -4,6 +4,7 @@ import { BsBrush, BsEraser, BsSquare, BsSquareFill, BsCircle, BsCircleFill } fro
 import { GiArrowCursor } from "react-icons/gi";
 import { CgFormatText } from "react-icons/cg";
 import { AiOutlineMinus } from "react-icons/ai";
+import { FaShapes } from "react-icons/fa";
 import { CirclePicker } from 'react-color';
 
 const BrushToolbox = (props) => {
@@ -67,21 +68,23 @@ const ShapesToolbox = (props) => {
 
     return (
         <div className={"icon dropdown" + (props.current_tool === "shapes" ? " active" : "")} >
-            <div onClick={() => setType("rect")}>
-                <BsSquare />
-            </div>
+            <FaShapes />
             <div className="dropdown-content">
                 <div className="hicon-container">
-                    <div className="hicon" onClick={() => setType("line")} >
+                    
+                    <div className={"hicon"+(type==="line"?" active":"")} onClick={() => setType("line")} >
                         < AiOutlineMinus />
                     </div>
-                    <div className="hicon" onClick={() => setType("fill rect")} >
+                    <div className={"hicon" + (type === "rect" ? " active" : "")} onClick={() => setType("rect")} >
+                        <BsSquare />
+                    </div>
+                    <div className={"hicon"+(type==="fill rect"?" active":"")} onClick={() => setType("fill rect")} >
                         <BsSquareFill />
                     </div>
-                    <div className="hicon" onClick={() => setType("circle")} >
+                    <div className={"hicon" + (type === "circle" ? " active" : "")} onClick={() => setType("circle")} >
                         <BsCircle />
                     </div>
-                    <div className="hicon" onClick={() => setType("fill circle")}>
+                    <div className={"hicon" + (type === "fill circle" ? " active" : "")} onClick={() => setType("fill circle")}>
                         <BsCircleFill />
                     </div>
                 </div>
