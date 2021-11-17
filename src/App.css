@@ -2,3 +2,10 @@
   font: sans-serif;
   text-align: center; 
 }
+
+#my-canvas{
+ width:100%;
+ height:200px;
+ background:orange;
+ position: static;
+}

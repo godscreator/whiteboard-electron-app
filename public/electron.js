@@ -4,6 +4,7 @@ const path = require("path");
 const url = require("url");
 var fs = require('fs'); // Load the File System to execute our common tasks (CRUD)
 const { download } = require('electron-dl');
+const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer');
 
 // Create the native browser window.
 function createWindow() {
@@ -155,4 +156,12 @@ ipcMain.handle('write-file-ipc', async (event, filepath, data) => {
 ipcMain.on('download-ipc', async (event, url, options) => {
   const win = BrowserWindow.getFocusedWindow();
   download(win, url, options);
+});
+
+
+
+app.whenReady().then(() => {
+  installExtension(REACT_DEVELOPER_TOOLS)
+    .then((name) => console.log(`Added Extension:  ${name}`))
+    .catch((err) => console.log('An error occurred: ', err));
 });

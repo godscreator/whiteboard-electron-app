@@ -1,7 +1,8 @@
 import "./whiteboard_styles.css";
 import React, { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
-import { BsBrush, BsEraser, BsSquare, BsSquareFill, BsCircle, BsCircleFill } from "react-icons/bs";
+import { BsCircleFill } from "react-icons/bs";
+import to_draggables from './draggable.js';
 
 import Toolbox from "./toolbox.js";
 import Topbar from "./file_menu.js";
@@ -63,7 +64,7 @@ export default function Whiteboard() {
             var img_url = "";
             if (canvasref.current !== null && canvasref3.current !== null) {
                 const element = canvasref3.current;
-                const canvas3 = await html2canvas(element,{backgroundColor:null});
+                const canvas3 = await html2canvas(element,{backgroundColor:null, scale: 2});
                 const canvas = canvasref.current;
                 const context = canvas.getContext("2d");
                 //const context3 = canvas3.getContext("2d");
@@ -152,15 +153,24 @@ export default function Whiteboard() {
         }
     };
 
+    const select = () => {
+        
+    }
+
+    const text = () => {
+
+    }
+
     var fn_dict = {};
     fn_dict["brush"] = brush;
     fn_dict["eraser"] = eraser;
     fn_dict["shapes"] = shapes;
+    fn_dict["select"] = select;
+    fn_dict["text"] = text;
 
-    var comp_count = 1;
-    var list_comps = [<BsBrush key={"comp:" + comp_count++} />, <BsCircle key={"comp:" + comp_count++} />, <BsCircleFill key={"comp:" + comp_count++}/>];
-    var comps = list_comps.map((d) => d);
+    var list_elements = [{ comp: <BsCircleFill />, left: 100, top: 100 }];
 
+    
     return (
         <div id="container">
             <div id="topbar">
@@ -209,8 +219,8 @@ export default function Whiteboard() {
                         style={{ cursor: canvasCursor }}
                     />
                 </div>
-                <div id="canvas3" className="board" ref={canvasref3}>
-                    {comps}
+                <div id="canvas3" className="board " width={canvas_width} height={canvas_height} ref={canvasref3}>
+                    {to_draggables(list_elements, () => { })}
                 </div>
             </div>
         </div>

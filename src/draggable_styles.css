@@ -1,0 +1,19 @@
+.drag-area{
+    position: relative;
+}
+
+.draggable{
+    position: absolute;
+}
+.dragger {
+    position: absolute;
+    display: none;
+    width: 30px;
+    height: 30px;
+    left: -15px;
+    top:-15px;
+    
+}
+.draggable:hover>.dragger{
+    display: block;
+}

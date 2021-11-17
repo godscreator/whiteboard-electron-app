@@ -4,7 +4,17 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 ## Available Scripts
 
+ 
+
 In the project directory, you can run:
+
+### `yarn electron:start`
+ kickstart your development flow
+ 
+ 
+### `yarn electron:package:<platform>`
+  generate a distributable bundle
+
 
 ### `yarn start`
 
