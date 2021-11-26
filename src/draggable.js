@@ -3,32 +3,44 @@ import "./draggable_styles.css";
 import { RiDragMove2Line } from "react-icons/ri";
 
 export function Draggable(props) {
+    const draggableref = useRef(null);
     const [left, setLeft] = useState(props.left);
     const [top, setTop] = useState(props.top);
+
+    const closeDragElement = () => {
+        // stop moving when mouse button is released:
+        document.onmouseup = null;
+        document.onmousemove = null;
+    }
+
+    const elementDrag = e => {
+        e = e || window.event;
+        e.preventDefault();
+        // calculate the new cursor position:
+        pos1 = pos3 - e.clientX;
+        pos2 = pos4 - e.clientY;
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        // set the element's new position:
+        elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+        elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+    };
+    const dragMouseDown = (e) => {
+        e = e || window.event;
+        e.preventDefault();
+        // get the mouse cursor position at startup:
+        pos3 = e.clientX;
+        pos4 = e.clientY;
+        document.onmouseup = closeDragElement;
+        // call a function whenever the cursor moves:
+        document.onmousemove = elementDrag;
+    }
     return (
-        <div className="draggable" style={{left:left+"px",top:top+"px"}}>
-            <div className="dragger"
-                onMouseDown={
-                    evt => {
-                        props.set_drag_listener((left, top) => {
-                            setLeft(left);
-                            setTop(top);
-                        });
-                    }
-                }
-                onMouseUp={
-                    evt => {
-                        props.set_drag_listener((left, top) => { });
-                        props.on_drag_stop(left, top);
-                    }
-                }
-            >
-                <RiDragMove2Line />
-            </div>
-            {props.children}
+        <div ref={draggableref} id="mydiv" style={{left:left+"px",top:top+"px"}}>
+            <div id="mydivheader">Click here to move</div>
+                {props.children}
         </div>
     );
-
 }
 
 export function DragArea(props) {
@@ -47,7 +59,10 @@ export function DragArea(props) {
         return child;
     });
     return (
-        <div ref={arearef} className="drag-area" onMouseMove={evt => on_mouse_move(evt)} style={{ width: "100%", height: "100%" }}>
+        <div ref={arearef} className="drag-area"
+            onMouseMove={evt => on_mouse_move(evt)}
+            onMouseUp={evt => drag_listener = (left, top) => { }}
+            style={{ width: "100%", height: "100%" }}>
             {draggable_children}
         </div>
     );
@@ -73,4 +88,8 @@ const to_draggables = (list_elements,on_drag_stop) => {
     return <DragArea>{comps}</DragArea>;
 };
 
+
+const to_draggables = () => {
+    
+}
 export default to_draggables;
