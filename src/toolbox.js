@@ -57,7 +57,7 @@ const EraserToolbox = (props) => {
 }
 
 const ShapesToolbox = (props) => {
-    const [radius, setRadius] = useState("5");
+    const [radius, setRadius] = useState("1");
     const [color, setColor] = useState("black");
     const [type, setType] = useState("rect");
 
@@ -67,7 +67,11 @@ const ShapesToolbox = (props) => {
     }, [radius, color, type]);
 
     return (
-        <div className={"icon dropdown" + (props.current_tool === "shapes" ? " active" : "")} >
+        <div className={"icon dropdown" + (props.current_tool === "shapes" ? " active" : "")}
+            onClick={() => {
+                props.onToolSettingChange({ name: "shapes", radius: radius, color: color, type: type });
+            }}
+        >
             <FaShapes />
             <div className="dropdown-content">
                 <div className="hicon-container">

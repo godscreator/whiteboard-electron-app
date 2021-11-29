@@ -1,0 +1,11 @@
+<Transformable
+                        key={key + ":Transformable"}
+                        shapeProps={elem_desc.shapeProps}
+                        isSelected={elem_desc.id === selectedId}
+                        onSelect={() => {
+                            selectShape(elem_desc.id);
+                        }}
+                        onChange={(newAttrs) => {
+                            setShape(newAttrs)
+                        }}
+                    >

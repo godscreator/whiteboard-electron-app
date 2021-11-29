@@ -4,7 +4,15 @@ const path = require("path");
 const url = require("url");
 var fs = require('fs'); // Load the File System to execute our common tasks (CRUD)
 const { download } = require('electron-dl');
-const { default: installExtension, REACT_DEVELOPER_TOOLS } = require('electron-devtools-installer');
+const isDev = require("electron-is-dev");
+// Conditionally include the dev tools installer to load React Dev Tools
+let installExtension, REACT_DEVELOPER_TOOLS; // NEW!
+
+if (isDev) {
+  const devTools = require("electron-devtools-installer");
+  installExtension = devTools.default;
+  REACT_DEVELOPER_TOOLS = devTools.REACT_DEVELOPER_TOOLS;
+} // NEW!
 
 // Create the native browser window.
 function createWindow() {
@@ -22,7 +30,7 @@ function createWindow() {
   // by the Create React App build process.
   // In development, set it to localhost to allow live/hot-reloading.
   const appURL = app.isPackaged
-    ? new URL({
+    ? url.format({
         pathname: path.join(__dirname, "index.html"),
         protocol: "file:",
         slashes: true,
@@ -161,7 +169,9 @@ ipcMain.on('download-ipc', async (event, url, options) => {
 
 
 app.whenReady().then(() => {
-  installExtension(REACT_DEVELOPER_TOOLS)
-    .then((name) => console.log(`Added Extension:  ${name}`))
-    .catch((err) => console.log('An error occurred: ', err));
+  if (!app.isPackaged) {
+    installExtension(REACT_DEVELOPER_TOOLS)
+      .then((name) => console.log(`Added Extension:  ${name}`))
+      .catch((err) => console.log('An error occurred: ', err));
+  }
 });

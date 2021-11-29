@@ -1,58 +1,30 @@
 import "./whiteboard_styles.css";
 import React, { useState, useRef, useEffect } from "react";
-import html2canvas from "html2canvas";
-import { BsCircleFill } from "react-icons/bs";
-import to_draggables from './draggable.js';
-
+import { Stage, Layer } from 'react-konva';
 import Toolbox from "./toolbox.js";
 import Topbar from "./file_menu.js";
-import * as draw from './draw_util.js';
-
+import { to_canvas_elements } from "./canvas_element";
 
 export default function Whiteboard() {
 
     const [tool, setTool] = useState({ name: "brush", color: "black", radius: 5 });
-    const [canvasCursor, setCanvasCursor] = useState("pointer");
     const [isDrawing, setIsDrawing] = useState(false);
-    const [points, setPoints] = useState([]);
-    const canvasref = useRef(null);
-    const canvasref2 = useRef(null);
-    const canvasref3 = useRef(null);
-    const canvas_width = 4096;
-    const canvas_height = 2048;
+    const [selectedId, selectShape] = useState(null);
+    const stageref = useRef(null);
 
-    useEffect(() => {
-        const canvas = canvasref.current;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = "white";
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-    }, []);
-  
-    let img_array = [];
+    const [elems, setElems] = useState([]);
+    const [tempElem, setTempElem] = useState(null);
 
-    const point_wrt_canvas = (pos) => {
-        const canvas = canvasref.current;
-        const rect = canvas.getBoundingClientRect(); // abs. size of element
-        const scaleX = canvas.width / rect.width; // relationship bitmap vs. element for X
-        const scaleY = canvas.height / rect.height; // relationship bitmap vs. element for Y
-        const OL = rect.left;
-        const OT = rect.top;
-        return {
-            x: Math.floor((pos.x - OL) * scaleX),
-            y: Math.floor((pos.y - OT) * scaleY)
+    const checkDeselect = (e) => {
+        // deselect when clicked on empty area
+        const clickedOnEmpty = e.target === e.target.getStage();
+        if (clickedOnEmpty) {
+            selectShape(null);
         }
-    }
+    };
 
     const clear = () => {
-        const canvas = canvasref.current;
-        const context = canvas.getContext('2d');
-        const canvas2 = canvasref2.current;
-        const context2 = canvas2.getContext("2d");
-        context.clearRect(0, 0, canvas.width, canvas.height);
-        context.fillStyle = "white";
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context2.clearRect(0, 0, canvas2.width, canvas2.height);
-        img_array = [];
+        setElems([]);
     };
 
     const load = () => {
@@ -62,102 +34,97 @@ export default function Whiteboard() {
     const get_image_url = () => {
         return new Promise(async (resolve, reject) => {
             var img_url = "";
-            if (canvasref.current !== null && canvasref3.current !== null) {
-                const element = canvasref3.current;
-                const canvas3 = await html2canvas(element,{backgroundColor:null, scale: 2});
-                const canvas = canvasref.current;
-                const context = canvas.getContext("2d");
-                //const context3 = canvas3.getContext("2d");
-                console.log("canvas: " + canvas.width + "," + canvas.height);
-                //console.log("canvas3: " + canvas3.width + "," + canvas3.height);
-                context.drawImage(canvas3, 0, 0, canvas.width, canvas.height);
-                
-                img_url = canvas.toDataURL('image/png', 1.0);
+            if (stageref.current !== null) {
+                img_url = stageref.current.toDataURL();
             }
             resolve(img_url);
         });
     }
 
     const brush = (action, point) => {
-        const canvas = canvasref.current;
-        const context = canvas.getContext('2d');
-        setCanvasCursor("crosshair");
         switch (action) {
 
             case "mouse_down":
-                setPoints([point]);
+                setTempElem({ ...tool, points: [point.x, point.y], id: elems.length });
                 break;
 
             case "mouse_move":
-                setPoints(points.concat([point]));
-                draw.freehand(context, points, tool.radius, tool.color);
+                if (tempElem.points.length >= 10) {
+                    var p = tempElem.points.concat([point.x, point.y]);
+                    var t = { ...tempElem, points: p };
+                    setElems(elems.concat(t));
+                    setTempElem({ ...tool, points: [point.x, point.y], id: elems.length + 1 });
+                } else {
+                    var q = tempElem.points.concat([point.x, point.y]);
+                    setTempElem({ ...tool, points: q, id: elems.length });
+                }
+
                 break;
 
             case "mouse_up":
-                img_array.push({ ...tool, points: points });
-                setPoints([]);
+                setElems(elems.concat(tempElem));
+                setTempElem(null);
                 break;
             default:
         }
     }
 
     const eraser = (action, point) => {
-        const canvas = canvasref.current;
-        const context = canvas.getContext('2d');
-        setCanvasCursor("crosshair");
         switch (action) {
 
             case "mouse_down":
-                setPoints([point]);
+                setElems([...elems, { ...tool, points: [point.x, point.y], id: elems.length }]);
                 break;
 
             case "mouse_move":
-                setPoints(points.concat([point]));
-                draw.erase(context, points, tool.radius);
+                let last = elems[elems.length - 1];
+                // add point
+                last.points = last.points.concat([point.x, point.y]);
+
+                // replace last
+                elems.splice(elems.length - 1, 1, last);
+                setElems(elems.concat());
+
                 break;
 
             case "mouse_up":
-                img_array.push({ ...tool, points: points });
-                setPoints([]);
+                setTempElem(null);
                 break;
             default:
         }
     };
 
     const shapes = (action, point) => {
-        const canvas = canvasref.current;
-        const context = canvas.getContext('2d');
-        const canvas2 = canvasref2.current;
-        const context2 = canvas2.getContext("2d");
-        setCanvasCursor("crosshair");
         switch (action) {
 
             case "mouse_down":
-                setPoints([point]);
+                setTempElem({ ...tool, points: [point.x, point.y], id: elems.length });
                 break;
 
             case "mouse_move":
-                context2.clearRect(0, 0, canvas2.width, canvas2.height);
-                const new_points = points.concat([point]);
-                draw.shape(context2, new_points, tool.radius, tool.color, tool.type);
+                let q;
+                if (tempElem.points.length === 2) {
+                    q = tempElem.points.concat([point.x, point.y]);
+                } else {
+                    q = tempElem.points.slice();
+                    q[2] = point.x;
+                    q[3] = point.y;
+                }
+                setTempElem({ ...tempElem, points: q, shapeProps: { x: q[0], y: q[1], width: q[2] - q[0], height: q[3] - q[1] , rotation: 0} });
                 break;
 
             case "mouse_up":
-                context2.clearRect(0, 0, canvas2.width, canvas2.height);
-                setPoints(points.concat([point]));
-                draw.shape(context, points.concat([point]), tool.radius, tool.color, tool.type);
-                img_array.push({ ...tool, points: points });
-                setPoints([]);
+                setElems(elems.concat(tempElem));
+                setTempElem(null);
                 break;
             default:
         }
     };
 
-    const select = () => {
-        
+    const select = (action, point) => {
     }
 
-    const text = () => {
+    const text = (action, point) => {
 
     }
 
@@ -168,9 +135,6 @@ export default function Whiteboard() {
     fn_dict["select"] = select;
     fn_dict["text"] = text;
 
-    var list_elements = [{ comp: <BsCircleFill />, left: 100, top: 100 }];
-
-    
     return (
         <div id="container">
             <div id="topbar">
@@ -180,48 +144,70 @@ export default function Whiteboard() {
             <div id="toolbox">
                 <Toolbox onToolChangeHandler={(t) => setTool(t)} />
             </div>
-            <div id="boardcanvas"
-                onMouseDown={evt => {
-                    setIsDrawing(true);
-                    const action = "mouse_down";
-                    const point = point_wrt_canvas({ x: evt.clientX, y: evt.clientY });
-                    fn_dict[tool.name](action, point);
-                }}
-                onMouseUp={evt => {
-                    setIsDrawing(false);
-                    const action = "mouse_up";
-                    const point = point_wrt_canvas({ x: evt.clientX, y: evt.clientY });
-                    fn_dict[tool.name](action, point);
-                }}
-                onMouseMove={evt => {
-                    if (isDrawing) {
-                        const action = "mouse_move";
-                        const point = point_wrt_canvas({ x: evt.clientX, y: evt.clientY });
+            <div id="boardcanvas" className="white-board">
+                <Stage ref={stageref}
+                    width={1024}
+                    height={512}
+                    onMouseDown={evt => {
+
+                        setIsDrawing(true);
+                        const action = "mouse_down";
+                        const stage = evt.target.getStage();
+                        const p = stage.getPointerPosition();
+                        const point = { x: p.x, y: p.y };
                         fn_dict[tool.name](action, point);
-                    }
-                }}>
+                        checkDeselect(evt);
+                    }}
+                    onMousemove={evt => {
 
-                <div id="canvas" className="board">
-                    <canvas
-                        className="white-board"
-                        ref={canvasref}
-                        width={canvas_width} height={canvas_height}
-                        style={{ cursor: canvasCursor }}
-                    />
-                </div>
+                        if (isDrawing) {
+                            const action = "mouse_move";
+                            const stage = evt.target.getStage();
+                            const p = stage.getPointerPosition();
+                            const point = { x: p.x, y: p.y };
+                            fn_dict[tool.name](action, point);
+                        }
+                    }}
+                    onMouseup={evt => {
 
-                <div id="canvas2" className="board">
-                    <canvas
-                        className="white-board"
-                        ref={canvasref2}
-                        
-                        width={canvas_width} height={canvas_height}
-                        style={{ cursor: canvasCursor }}
-                    />
-                </div>
-                <div id="canvas3" className="board " width={canvas_width} height={canvas_height} ref={canvasref3}>
-                    {to_draggables(list_elements, () => { })}
-                </div>
+                        setIsDrawing(false);
+                        const action = "mouse_up";
+                        const stage = evt.target.getStage();
+                        const p = stage.getPointerPosition();
+                        const point = { x: p.x, y: p.y };
+                        fn_dict[tool.name](action, point);
+                        //console.log(elems);
+                        //console.log("temp: ");
+                        //console.log(tempElem);
+                    }}
+                >
+                    <Layer>
+                        {elems.map((line, i) => to_canvas_elements(line, i, selectedId,
+                            (id) => {
+                                selectShape(id);
+                                console.log(id + " selected")
+                            },
+                            (shape) => {
+                                console.log(shape);
+                                var shapes = elems.slice();
+                                shapes[i] = shape;
+                                setElems(shapes);
+                            }
+                        ))}
+                    </Layer>
+                    <Layer listening={false}>
+                        {tempElem && to_canvas_elements(tempElem, 200, selectedId,
+                            (id) => {
+                                selectShape(id);
+                                console.log(id + " selected")
+                            },
+                            (shape) => {
+                                console.log(shape);
+                                setTempElem(shape);
+                            }
+                        )}
+                    </Layer>
+                </Stage>
             </div>
         </div>
     );
