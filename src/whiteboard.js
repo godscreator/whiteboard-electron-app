@@ -1,5 +1,5 @@
 import "./whiteboard_styles.css";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Stage, Layer } from 'react-konva';
 import Toolbox from "./toolbox.js";
 import Topbar from "./file_menu.js";
@@ -10,6 +10,7 @@ export default function Whiteboard() {
     const [tool, setTool] = useState({ name: "brush", color: "black", radius: 5 });
     const [isDrawing, setIsDrawing] = useState(false);
     const [selectedId, selectShape] = useState(null);
+    const [cursor, setCursor] = useState("default");
     const stageref = useRef(null);
 
     const [elems, setElems] = useState([]);
@@ -110,7 +111,7 @@ export default function Whiteboard() {
                     q[2] = point.x;
                     q[3] = point.y;
                 }
-                setTempElem({ ...tempElem, points: q, shapeProps: { x: q[0], y: q[1], width: q[2] - q[0], height: q[3] - q[1] , rotation: 0} });
+                setTempElem({ ...tempElem, points: q, shapeProps: { x: q[0], y: q[1], width: q[2] - q[0], height: q[3] - q[1], rotation: 0 } });
                 break;
 
             case "mouse_up":
@@ -125,7 +126,12 @@ export default function Whiteboard() {
     }
 
     const text = (action, point) => {
-
+        switch (action) {
+            case "mouse_up":
+                setElems(elems.concat([{ ...tool, text: "", id: elems.length, shapeProps: { x: point.x, y: point.y,width:100,height:100, rotation: 0 } }]))
+                break;
+            default:
+        }
     }
 
     var fn_dict = {};
@@ -146,6 +152,7 @@ export default function Whiteboard() {
             </div>
             <div id="boardcanvas" className="white-board">
                 <Stage ref={stageref}
+                    style={{cursor:cursor}}
                     width={1024}
                     height={512}
                     onMouseDown={evt => {
@@ -176,9 +183,7 @@ export default function Whiteboard() {
                         const p = stage.getPointerPosition();
                         const point = { x: p.x, y: p.y };
                         fn_dict[tool.name](action, point);
-                        //console.log(elems);
-                        //console.log("temp: ");
-                        //console.log(tempElem);
+
                     }}
                 >
                     <Layer>
@@ -193,6 +198,9 @@ export default function Whiteboard() {
                                 shapes[i] = shape;
                                 setElems(shapes);
                             }
+                            , (cursor) => {
+                                setCursor(cursor)
+                            }
                         ))}
                     </Layer>
                     <Layer listening={false}>
@@ -204,6 +212,9 @@ export default function Whiteboard() {
                             (shape) => {
                                 console.log(shape);
                                 setTempElem(shape);
+                            },
+                            (cursor) => {
+                                setCursor(cursor)
                             }
                         )}
                     </Layer>
