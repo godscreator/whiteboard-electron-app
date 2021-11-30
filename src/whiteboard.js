@@ -15,6 +15,7 @@ export default function Whiteboard() {
 
     const [elems, setElems] = useState([]);
     const [tempElem, setTempElem] = useState(null);
+    const [urls, setUrls] = useState([]);
 
     const checkDeselect = (e) => {
         // deselect when clicked on empty area
@@ -120,7 +121,7 @@ export default function Whiteboard() {
     const text = (action, point) => {
         switch (action) {
             case "mouse_up":
-                setElems(elems.concat([{ ...tool, text: "", id: elems.length, shapeProps: { x: point.x, y: point.y,width:100,height:100, rotation: 0 } }]))
+                setElems(elems.concat([{ ...tool, text: "", id: elems.length, shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } }]))
                 setTool({ name: "select" });
                 break;
             default:
@@ -148,7 +149,7 @@ export default function Whiteboard() {
     return (
         <div id="container">
             <div id="topbar">
-                <Topbar data={elems} setData={(d)=>setElems(d)} get_image_url={() => get_image_url()} />
+                <Topbar data={elems} setData={(d) => setElems(d)} urls={urls} setUrls={(u) => setUrls(u)} get_image_url={() => get_image_url()} />
             </div>
 
             <div id="toolbox">
@@ -156,7 +157,7 @@ export default function Whiteboard() {
             </div>
             <div id="boardcanvas" className="white-board">
                 <Stage ref={stageref}
-                    style={{cursor:cursor}}
+                    style={{ cursor: cursor }}
                     width={1024}
                     height={512}
                     onMouseDown={evt => {

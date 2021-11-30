@@ -6,6 +6,7 @@ import Nav from 'react-bootstrap/Nav'
 import Container from "react-bootstrap/Container"
 import "bootstrap/dist/css/bootstrap.min.css";
 var JSZip = require("jszip");
+var JSZipUtils = require("jszip-utils");
 
 
 export default function Topbar(props) {
@@ -50,6 +51,50 @@ export default function Topbar(props) {
         );
     };
 
+    const open_image = () => {
+        window.electron.open_dialog({
+            properties: ['openFile'],
+            filters: [
+                { name: "Image", extensions: ['jpg','png','jpeg'] },
+            ]
+        },
+            result => {
+                var filepath = result[0];
+
+                window.electron.read_file(filepath, null,
+                    result => {
+                        var uri=null;
+                        if (filepath.endsWith(".png")) {
+                            uri = URL.createObjectURL(
+                                new Blob([result.buffer], { type: 'image/png' }));
+                            
+                        } else if (filepath.endsWith(".jpg")){
+                            uri = URL.createObjectURL(
+                                new Blob([result.buffer], { type: 'image/jpg' }));
+                        }
+                        else if (filepath.endsWith(".jpeg")) {
+                            uri = URL.createObjectURL(
+                                new Blob([result.buffer], { type: 'image/jpeg' }));
+                        }
+                        if (uri !== null) {
+                            props.setUrls(props.urls.concat(uri));
+                            props.setData(props.data.concat([{ name:"image", src: uri, id: props.data.length, shapeProps: { x: 0, y: 0, width: 100, height: 100, rotation: 0 } }]))
+                            console.log("image inserted");
+                        }
+                        
+                        
+                    },
+                    err => console.log(err)
+                );
+
+
+            },
+            err => {
+                console.log(err);
+            }
+        );
+    };
+
     const save_file = () => {
         if (filename === "") {
             window.electron.save_dialog({
@@ -63,15 +108,31 @@ export default function Topbar(props) {
 
                     var zip = new JSZip();
                     zip.file("elements.json", JSON.stringify(props.data));
-                    zip.generateAsync({ type: "nodebuffer" })
-                        .then(function (content) {
-                            window.electron.write_file(filepath, content,
-                                result => {
-                                    console.log("The file is saved");
-                                },
-                                err => console.log(err)
-                            );
+                    var images = zip.folder("images");
+                    var count = 0, maxCount = props.urls.length;
+                    props.urls.forEach((url,i) => {
+                        JSZipUtils.getBinaryContent(url, function (err, data) {
+                            if (err) {
+                                throw err; // or handle the error
+                            }
+                            var filename = url.split('/').pop().split('#')[0].split('?')[0];
+                            console.log(filename, " added.");
+                            images.file(filename, data, { binary: true });
+                            count = count + 1;
+                            if (count === maxCount) {
+                                zip.generateAsync({ type: "nodebuffer" })
+                                    .then(function (content) {
+                                        window.electron.write_file(filepath, content,
+                                            result => {
+                                                console.log("The file is saved");
+                                            },
+                                            err => console.log(err)
+                                        );
+                                    });
+                            }
                         });
+                    });
+                    
 
 
                 },
@@ -117,6 +178,9 @@ export default function Topbar(props) {
                                 <NavDropdown.Item onClick={() => export_png()}>Export PNG</NavDropdown.Item>
                                 <NavDropdown.Divider />
                                 <NavDropdown.Item href="#close">Close</NavDropdown.Item>
+                            </NavDropdown>
+                            <NavDropdown title="Edit" id="basic-nav-dropdown">
+                                <NavDropdown.Item onClick={() => open_image()}>Insert Image</NavDropdown.Item>
                             </NavDropdown>
                         </Nav>
                     </Navbar.Collapse>

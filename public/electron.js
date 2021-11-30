@@ -163,7 +163,7 @@ ipcMain.handle('write-file-ipc', async (event, filepath, data) => {
 
 ipcMain.on('download-ipc', async (event, url, options) => {
   const win = BrowserWindow.getFocusedWindow();
-  download(win, url, options);
+  download(win, url, options).catch(err=>console.log(err));
 });
 
 
