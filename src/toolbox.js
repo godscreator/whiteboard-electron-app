@@ -1,6 +1,6 @@
 import "./toolbox_styles.css";
 import React, { useState, useEffect } from "react";
-import { BsBrush, BsEraser, BsSquare, BsSquareFill, BsCircle, BsCircleFill, BsImage } from "react-icons/bs";
+import { BsBrush, BsEraser, BsSquare, BsSquareFill, BsCircle, BsCircleFill } from "react-icons/bs";
 import { GiArrowCursor } from "react-icons/gi";
 import { CgFormatText } from "react-icons/cg";
 import { AiOutlineMinus } from "react-icons/ai";
@@ -126,18 +126,6 @@ const TextToolbox = (props) => {
     );
 }
 
-const ImageToolbox = (props) => {
-    return (
-        <div className={"icon" + (props.current_tool === "image" ? " active" : "")}
-            onClick={() => {
-                props.onToolSettingChange({ name: "image" });
-            }}
-        >
-            <BsImage />
-        </div>
-    );
-}
-
 export default function Toolbox({ tool, onToolChangeHandler }) {
 
     return (
@@ -148,7 +136,6 @@ export default function Toolbox({ tool, onToolChangeHandler }) {
                 <ShapesToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
                 <SelectToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
                 <TextToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
-                <ImageToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
             </div>
         </div>
     );

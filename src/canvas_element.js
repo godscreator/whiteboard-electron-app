@@ -111,7 +111,7 @@ const URLImage = ({ x,y,width,height,src }) => {
     );
 };
 
-export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setShape, setCursor) => {
+export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setShape, setCursor, urls) => {
     var elem = null;
     if (elem_desc !== null)
         switch (elem_desc.name) {
@@ -185,8 +185,8 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                                     key={key}
                                     x={elem_desc.shapeProps.width / 2}
                                     y={elem_desc.shapeProps.height / 2}
-                                    radiusX={elem_desc.shapeProps.width / 2}
-                                    radiusY={elem_desc.shapeProps.height / 2}
+                                    radiusX={Math.abs(elem_desc.shapeProps.width / 2)}
+                                    radiusY={Math.abs(elem_desc.shapeProps.height / 2)}
                                     stroke={elem_desc.color}
                                     strokeWidth={Number(elem_desc.radius)}
                                 />
@@ -198,8 +198,8 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                                     key={key}
                                     x={elem_desc.shapeProps.width / 2}
                                     y={elem_desc.shapeProps.height / 2}
-                                    radiusX={elem_desc.shapeProps.width / 2}
-                                    radiusY={elem_desc.shapeProps.height / 2}
+                                    radiusX={Math.abs(elem_desc.shapeProps.width / 2)}
+                                    radiusY={Math.abs(elem_desc.shapeProps.height / 2)}
                                     fill={elem_desc.color}
                                 />
                             break;
@@ -251,7 +251,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                         setShape({ ...elem_desc, shapeProps: newAttrs })
                     }}
                 >
-                    <URLImage x={0} y={0} width={elem_desc.shapeProps.width} height={elem_desc.shapeProps.height} src={elem_desc.src} />
+                    <URLImage x={0} y={0} width={elem_desc.shapeProps.width} height={elem_desc.shapeProps.height} src={urls[elem_desc.fname]} />
                 </Transformable>;
                 break;
             default:

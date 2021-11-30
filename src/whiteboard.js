@@ -1,5 +1,5 @@
 import "./whiteboard_styles.css";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef} from "react";
 import { Stage, Layer } from 'react-konva';
 import Toolbox from "./toolbox.js";
 import Topbar from "./file_menu.js";
@@ -12,10 +12,11 @@ export default function Whiteboard() {
     const [selectedId, selectShape] = useState(null);
     const [cursor, setCursor] = useState("default");
     const stageref = useRef(null);
+    const containerref = useRef(null);
 
     const [elems, setElems] = useState([]);
     const [tempElem, setTempElem] = useState(null);
-    const [urls, setUrls] = useState([]);
+    const [urls, setUrls] = useState({});
 
     const checkDeselect = (e) => {
         // deselect when clicked on empty area
@@ -128,28 +129,34 @@ export default function Whiteboard() {
         }
     }
 
-    const image_tool = (action, point) => {
-        switch (action) {
-            case "mouse_up":
-                setElems(elems.concat([{ ...tool, src: "logo512.png", id: elems.length, shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } }]))
-                setTool({ name: "select" });
-                break;
-            default:
-        }
-    }
-
     var fn_dict = {};
     fn_dict["brush"] = brush;
     fn_dict["eraser"] = eraser;
     fn_dict["shapes"] = shapes;
     fn_dict["select"] = select;
     fn_dict["text"] = text;
-    fn_dict["image"] = image_tool;
+
+    const select_id = (id) => {
+        selectShape(id);
+    }
+
+    const set_cursor = (cursor) => {
+        setCursor(cursor)
+    }
+
+    const refresh = () => {
+        setTool({ name: "select" });
+    }
 
     return (
-        <div id="container">
+        <div id="container" ref={containerref}>
             <div id="topbar">
-                <Topbar data={elems} setData={(d) => setElems(d)} urls={urls} setUrls={(u) => setUrls(u)} get_image_url={() => get_image_url()} />
+                <Topbar
+                    data={elems} setData={(d) => setElems(d)}
+                    urls={urls} setUrls={(u) => setUrls(u)}
+                    get_image_url={() => get_image_url()}
+                    refresh={() => refresh()}
+                />
             </div>
 
             <div id="toolbox">
@@ -193,34 +200,26 @@ export default function Whiteboard() {
                 >
                     <Layer>
                         {elems.map((line, i) => to_canvas_elements(line, i, selectedId,
-                            (id) => {
-                                selectShape(id);
-                                console.log(id + " selected")
-                            },
+                            select_id,
                             (shape) => {
                                 console.log(shape);
                                 var shapes = elems.slice();
                                 shapes[i] = shape;
                                 setElems(shapes);
                             }
-                            , (cursor) => {
-                                setCursor(cursor)
-                            }
+                            ,set_cursor
+                            ,urls
                         ))}
                     </Layer>
                     <Layer listening={false}>
                         {tempElem && to_canvas_elements(tempElem, 200, selectedId,
-                            (id) => {
-                                selectShape(id);
-                                console.log(id + " selected")
-                            },
+                            select_id,
                             (shape) => {
                                 console.log(shape);
                                 setTempElem(shape);
-                            },
-                            (cursor) => {
-                                setCursor(cursor)
                             }
+                            ,set_cursor
+                            ,urls
                         )}
                     </Layer>
                 </Stage>
