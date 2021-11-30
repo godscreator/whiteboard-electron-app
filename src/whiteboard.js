@@ -24,14 +24,6 @@ export default function Whiteboard() {
         }
     };
 
-    const clear = () => {
-        setElems([]);
-    };
-
-    const load = () => {
-
-    }
-
     const get_image_url = () => {
         return new Promise(async (resolve, reject) => {
             var img_url = "";
@@ -129,6 +121,17 @@ export default function Whiteboard() {
         switch (action) {
             case "mouse_up":
                 setElems(elems.concat([{ ...tool, text: "", id: elems.length, shapeProps: { x: point.x, y: point.y,width:100,height:100, rotation: 0 } }]))
+                setTool({ name: "select" });
+                break;
+            default:
+        }
+    }
+
+    const image_tool = (action, point) => {
+        switch (action) {
+            case "mouse_up":
+                setElems(elems.concat([{ ...tool, src: "logo512.png", id: elems.length, shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } }]))
+                setTool({ name: "select" });
                 break;
             default:
         }
@@ -140,15 +143,16 @@ export default function Whiteboard() {
     fn_dict["shapes"] = shapes;
     fn_dict["select"] = select;
     fn_dict["text"] = text;
+    fn_dict["image"] = image_tool;
 
     return (
         <div id="container">
             <div id="topbar">
-                <Topbar clear={() => clear()} load={() => load()} get_image_url={() => get_image_url()} />
+                <Topbar data={elems} setData={(d)=>setElems(d)} get_image_url={() => get_image_url()} />
             </div>
 
             <div id="toolbox">
-                <Toolbox onToolChangeHandler={(t) => setTool(t)} />
+                <Toolbox tool={tool} onToolChangeHandler={(t) => setTool(t)} />
             </div>
             <div id="boardcanvas" className="white-board">
                 <Stage ref={stageref}

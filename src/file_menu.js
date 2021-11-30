@@ -1,38 +1,48 @@
 import "./file_menu_styles.css";
-import React from "react";
+import React, { useState } from "react";
 import Navbar from 'react-bootstrap/Navbar'
 import NavDropdown from 'react-bootstrap/Navdropdown'
 import Nav from 'react-bootstrap/Nav'
 import Container from "react-bootstrap/Container"
 import "bootstrap/dist/css/bootstrap.min.css";
+var JSZip = require("jszip");
+
 
 export default function Topbar(props) {
-    var filename = "";
-    //var filedata = [];
-
+    const [filename, setFilename] = useState("");
 
 
     const new_file = () => {
-        props.clear();
-        filename = "";
+        props.setData([]);
+        setFilename("");
     }
     const open_file = () => {
         window.electron.open_dialog({
             properties: ['openFile'],
             filters: [
-                { name: 'Text', extensions: ['txt'] },
-                { name: 'JSON', extensions: ['json'] },
+                { name: "WhiteBoard File", extensions: ['wbrd'] },
             ]
         },
             result => {
                 var filepath = result[0];
-                filename = filepath;
-                window.electron.read_file(filepath, 'utf-8',
+                setFilename(filepath);
+
+                window.electron.read_file(filepath, null,
                     result => {
-                        console.log("The file content is : " + result);
+                        JSZip.loadAsync(result).then(function (zip) {
+                            zip.file("elements.json").async("string")
+                                .then(result => {
+                                    props.setData(JSON.parse(result));
+                                    console.log("The file is loaded.");
+                                }).catch(err => console.log(err));
+
+                        });
+
                     },
                     err => console.log(err)
                 );
+
+
             },
             err => {
                 console.log(err);
@@ -41,32 +51,46 @@ export default function Topbar(props) {
     };
 
     const save_file = () => {
-        if (filename !== "") {
+        if (filename === "") {
             window.electron.save_dialog({
                 filters: [
-                    { name: 'Text', extensions: ['txt'] },
-                    { name: 'JSON', extensions: ['json'] },
+                    { name: "WhiteBoard File", extensions: ['wbrd'] },
                 ],
                 defaultPath: "untitled"
             },
                 filepath => {
-                    filename = filepath;
-                    window.electron.write_file(filepath, "henlo mr dj",
-                        result => {
-                            console.log("The result : " + result);
-                        },
-                        err => console.log(err)
-                    );
+                    setFilename(filepath);
+
+                    var zip = new JSZip();
+                    zip.file("elements.json", JSON.stringify(props.data));
+                    zip.generateAsync({ type: "nodebuffer" })
+                        .then(function (content) {
+                            window.electron.write_file(filepath, content,
+                                result => {
+                                    console.log("The file is saved");
+                                },
+                                err => console.log(err)
+                            );
+                        });
+
+
                 },
                 err => console.log(err)
             );
         } else {
-            window.electron.write_file(filename, "henlo mr dj",
-                result => {
-                    console.log("The result : " + result);
-                },
-                err => console.log(err)
-            );
+
+            var zip = new JSZip();
+            zip.file("elements.json", JSON.stringify(props.data));
+            zip.generateAsync({ type: "nodebuffer" })
+                .then(function (content) {
+                    window.electron.write_file(filename, content,
+                        result => {
+                            console.log("The file is saved");
+                        },
+                        err => console.log(err)
+                    );
+                });
+
         }
     }
 

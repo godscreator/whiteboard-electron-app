@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from "react";
-import { Line, Rect, Transformer, Group, Ellipse } from 'react-konva';
+import { Line, Rect, Transformer, Group, Image, Ellipse } from 'react-konva';
 import { Html } from "react-konva-utils";
+import useImage from 'use-image';
 
 const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange }) => {
     const shapeRef = useRef();
@@ -71,6 +72,45 @@ const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange })
     );
 };
 
+const MovableText = ({ value, onChange, onEnterDragbox, onLeaveDragbox }) => {
+    return (
+        <React.Fragment>
+            <Html divProps={{ style: { resize: "both", overflow: "hidden", border: "2px solid silver" } }}>
+                <textarea
+                    value={value}
+                    onChange={(e) => {
+                        onChange(e);
+                    }}
+                    placeholder="Type here"
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        resize: "none",
+                        outline: "none",
+                        border: "none"
+                    }}
+                />
+            </Html>
+            <Rect x={-5} y={-5} width={10} height={10} fill="silver"
+                onMouseEnter={()=>onEnterDragbox()}
+                onMouseLeave={()=>onLeaveDragbox()}
+            />
+        </React.Fragment>
+    );
+}
+const URLImage = ({ x,y,width,height,src }) => {
+    const [img] = useImage(src);
+    return (
+        <Image
+            image={img}
+            x={x}
+            y={y}
+            width={width}
+            height={height}
+        />
+    );
+};
+
 export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setShape, setCursor) => {
     var elem = null;
     if (elem_desc !== null)
@@ -104,13 +144,13 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                         case "line":
                             elem =
                                 <Line
-                                    key={key}
-                                    points={[0, 0, elem_desc.shapeProps.width, elem_desc.shapeProps.height]}
-                                    stroke={elem_desc.color}
-                                    strokeWidth={Number(elem_desc.radius)}
-                                    tension={0.5}
-                                    lineCap="round"
-                                    globalCompositeOperation={'source-over'}
+                                key={key}
+                                points={[0, 0, elem_desc.shapeProps.width, elem_desc.shapeProps.height]}
+                                stroke={elem_desc.color}
+                                strokeWidth={Number(elem_desc.radius)}
+                                tension={0.5}
+                                lineCap="round"
+                                globalCompositeOperation={'source-over'}
                                 />
 
                             break;
@@ -189,26 +229,29 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                         setShape({ ...elem_desc, shapeProps: newAttrs })
                     }}
                 >
-                    <Html divProps={{ style: { resize: "both", overflow: "hidden", border: "2px solid silver" } }}>
-                        <textarea
-                            value={elem_desc.text}
-                            onChange={(e) => {
-                                setShape({ ...elem_desc, text: e.target.value })
-                            }}
-                            placeholder="Type here"
-                            style={{
-                                width: "100%",
-                                height: "100%",
-                                resize: "none",
-                                outline: "none",
-                                border: "none"
-                            }}
-                        />
-                    </Html>
-                    <Rect x={-5} y={-5} width={10} height={10} fill="silver"
-                        onMouseEnter={() => setCursor("move")}
-                        onMouseLeave={() => setCursor("default")}
+                    <MovableText
+                        value={elem_desc.text}
+                        onChange={(e) => {
+                            setShape({ ...elem_desc, text: e.target.value })
+                        }}
+                        onEnterDragbox={() => setCursor("move")}
+                        onLeaveDragbox={() => setCursor("default")}
                     />
+                </Transformable>;
+                break;
+            case "image":
+                elem = <Transformable
+                    key={key + ": Transformable"}
+                    shapeProps={elem_desc.shapeProps}
+                    isSelected={elem_desc.id === selectedId}
+                    onSelect={() => {
+                        selectShape(elem_desc.id);
+                    }}
+                    onChange={(newAttrs) => {
+                        setShape({ ...elem_desc, shapeProps: newAttrs })
+                    }}
+                >
+                    <URLImage x={0} y={0} width={elem_desc.shapeProps.width} height={elem_desc.shapeProps.height} src={elem_desc.src} />
                 </Transformable>;
                 break;
             default:

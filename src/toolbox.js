@@ -1,6 +1,6 @@
 import "./toolbox_styles.css";
 import React, { useState, useEffect } from "react";
-import { BsBrush, BsEraser, BsSquare, BsSquareFill, BsCircle, BsCircleFill } from "react-icons/bs";
+import { BsBrush, BsEraser, BsSquare, BsSquareFill, BsCircle, BsCircleFill, BsImage } from "react-icons/bs";
 import { GiArrowCursor } from "react-icons/gi";
 import { CgFormatText } from "react-icons/cg";
 import { AiOutlineMinus } from "react-icons/ai";
@@ -75,14 +75,14 @@ const ShapesToolbox = (props) => {
             <FaShapes />
             <div className="dropdown-content">
                 <div className="hicon-container">
-                    
-                    <div className={"hicon"+(type==="line"?" active":"")} onClick={() => setType("line")} >
+
+                    <div className={"hicon" + (type === "line" ? " active" : "")} onClick={() => setType("line")} >
                         < AiOutlineMinus />
                     </div>
                     <div className={"hicon" + (type === "rect" ? " active" : "")} onClick={() => setType("rect")} >
                         <BsSquare />
                     </div>
-                    <div className={"hicon"+(type==="fill rect"?" active":"")} onClick={() => setType("fill rect")} >
+                    <div className={"hicon" + (type === "fill rect" ? " active" : "")} onClick={() => setType("fill rect")} >
                         <BsSquareFill />
                     </div>
                     <div className={"hicon" + (type === "circle" ? " active" : "")} onClick={() => setType("circle")} >
@@ -102,38 +102,53 @@ const ShapesToolbox = (props) => {
     );
 }
 
-export default function Toolbox(props) {
+const SelectToolbox = (props) => {
+    return (
+        <div className={"icon" + (props.current_tool === "select" ? " active" : "")}
+            onClick={() => {
+                props.onToolSettingChange({ name: "select" });
+            }}
+        >
+            <GiArrowCursor />
+        </div>
+    );
+}
 
-    const [tool, setTool] = useState({ name: "brush", color: "black", radius: 5 });
+const TextToolbox = (props) => {
+    return (
+        <div className={"icon" + (props.current_tool === "text" ? " active" : "")}
+            onClick={() => {
+                props.onToolSettingChange({ name: "text"});
+            }}
+        >
+            <CgFormatText />
+        </div>
+    );
+}
 
+const ImageToolbox = (props) => {
+    return (
+        <div className={"icon" + (props.current_tool === "image" ? " active" : "")}
+            onClick={() => {
+                props.onToolSettingChange({ name: "image" });
+            }}
+        >
+            <BsImage />
+        </div>
+    );
+}
 
-    useEffect(() => {
-        props.onToolChangeHandler(tool);
-    }, [tool, props]);
+export default function Toolbox({ tool, onToolChangeHandler }) {
 
     return (
         <div className="tool-box">
             <div className="icon-bar">
-                <BrushToolbox current_tool={tool.name} onToolSettingChange={t => setTool(t)} />
-
-                <EraserToolbox current_tool={tool.name} onToolSettingChange={t => setTool(t)} />
-
-                <ShapesToolbox current_tool={tool.name} onToolSettingChange={t => setTool(t)} />
-
-                <div className={"icon" + (tool.name === "select" ? " active" : "")}
-                    onClick={() => {
-                        setTool({ name: "select" });
-                    }}
-                >
-                    <GiArrowCursor />
-                </div>
-                <div className={"icon" + (tool.name === "text" ? " active" : "")}
-                    onClick={() => {
-                        setTool({ name: "text", color: "black" });
-                    }}
-                >
-                    <CgFormatText />
-                </div>
+                <BrushToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
+                <EraserToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
+                <ShapesToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
+                <SelectToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
+                <TextToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
+                <ImageToolbox current_tool={tool.name} onToolSettingChange={t => onToolChangeHandler(t)} />
             </div>
         </div>
     );
