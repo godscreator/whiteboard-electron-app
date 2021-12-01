@@ -117,7 +117,12 @@ const MovableText = ({ value, width, height, onChange, isEditing, onEnterDragbox
     return (
         <React.Fragment>
             <Html divProps={{ style: { display: isEditing || isFirstRender ? "block" : "none", position: "absolute", left: padding+"px", top: padding+"px", width: width-padding + "px", height: height-padding + "px" } }}>
-
+                <div ref={htmlref} style={{
+                    width: "100%",
+                    height: "100%",
+                    resize: "none",
+                    outline: "none",
+                }}>
                 <textarea
                     ref={htmlref}
                     value={value}
@@ -132,7 +137,7 @@ const MovableText = ({ value, width, height, onChange, isEditing, onEnterDragbox
                         outline: "none",
                     }}
                 />
-
+                </div>
             </Html>
             <Rect x={0} y={0} width={width} height={height} fill="silver"/>
             <Image image={img} x={padding/2} y={padding/2} width={width-padding/2} height={height-padding/2} />

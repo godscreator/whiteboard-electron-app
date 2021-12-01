@@ -31,7 +31,7 @@ export default function Whiteboard() {
         return new Promise(async (resolve, reject) => {
             var img_url = "";
             if (stageref.current !== null) {
-                img_url = stageref.current.toDataURL();
+                img_url = stageref.current.toDataURL({pixelRatio:2});
             }
             resolve(img_url);
         });
