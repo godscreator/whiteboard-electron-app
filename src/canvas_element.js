@@ -90,22 +90,33 @@ const URLImage = ({ x, y, width, height, src }) => {
 const MovableText = ({ value, width, height, onChange, isEditing, onEnterDragbox, onLeaveDragbox }) => {
     const htmlref = useRef(null);
     const [img, setImg] = useState(null);
+    const [isFirstRender, setIsFirstRender] = useState(true);
     const padding = 2;
     const remake = () => {
-        if (htmlref.current !== null) {
-            const html = htmlref.current;
-            toCanvas(html, { pixelRatio: 2 }).then((canvas) => {
+        return new Promise(async (resolve, reject) => {
+            if (htmlref.current !== null) {
+                const html = htmlref.current;
+                var canvas = await toCanvas(html, { pixelRatio: 2 });
                 setImg(canvas);
-            })
-        }
+            }
+            resolve();
+        });
+        
     }
     useEffect(() => {
         if(isEditing)
             remake();
     }, [value, width, height, isEditing]);
+    useEffect(() => {
+        const refresh = async () => {
+            await remake();
+            setIsFirstRender(false);
+        }
+        refresh();
+    }, []);
     return (
         <React.Fragment>
-            <Html divProps={{ style: { display: isEditing ? "block" : "none", position: "absolute", left: padding+"px", top: padding+"px", width: width-padding + "px", height: height-padding + "px" } }}>
+            <Html divProps={{ style: { display: isEditing || isFirstRender ? "block" : "none", position: "absolute", left: padding+"px", top: padding+"px", width: width-padding + "px", height: height-padding + "px" } }}>
 
                 <textarea
                     ref={htmlref}
