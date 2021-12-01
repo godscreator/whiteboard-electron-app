@@ -1,7 +1,8 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { Line, Rect, Transformer, Group, Image, Ellipse } from 'react-konva';
 import { Html } from "react-konva-utils";
 import useImage from 'use-image';
+import { toCanvas } from 'html-to-image';
 
 const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange }) => {
     const shapeRef = useRef();
@@ -55,50 +56,25 @@ const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange })
             >
                 {children}
             </Group>
-            {isSelected && (
-                <Transformer
-                    ref={trRef}
+            {
+                isSelected && (
+                    <Transformer
+                        ref={trRef}
 
-                    boundBoxFunc={(oldBox, newBox) => {
-                        // limit resize
-                        if (newBox.width < 5 || newBox.height < 5) {
-                            return oldBox;
-                        }
-                        return newBox;
-                    }}
-                />
-            )}
-        </React.Fragment>
+                        boundBoxFunc={(oldBox, newBox) => {
+                            // limit resize
+                            if (newBox.width < 5 || newBox.height < 5) {
+                                return oldBox;
+                            }
+                            return newBox;
+                        }}
+                    />
+                )
+            }
+        </React.Fragment >
     );
 };
-
-const MovableText = ({ value, onChange, onEnterDragbox, onLeaveDragbox }) => {
-    return (
-        <React.Fragment>
-            <Html divProps={{ style: { resize: "both", overflow: "hidden", border: "2px solid silver" } }}>
-                <textarea
-                    value={value}
-                    onChange={(e) => {
-                        onChange(e);
-                    }}
-                    placeholder="Type here"
-                    style={{
-                        width: "100%",
-                        height: "100%",
-                        resize: "none",
-                        outline: "none",
-                        border: "none"
-                    }}
-                />
-            </Html>
-            <Rect x={-5} y={-5} width={10} height={10} fill="silver"
-                onMouseEnter={()=>onEnterDragbox()}
-                onMouseLeave={()=>onLeaveDragbox()}
-            />
-        </React.Fragment>
-    );
-}
-const URLImage = ({ x,y,width,height,src }) => {
+const URLImage = ({ x, y, width, height, src }) => {
     const [img] = useImage(src);
     return (
         <Image
@@ -110,6 +86,48 @@ const URLImage = ({ x,y,width,height,src }) => {
         />
     );
 };
+
+const MovableText = ({ value, width, height, onChange, isEditing, onEnterDragbox, onLeaveDragbox }) => {
+    const htmlref = useRef(null);
+    const [img, setImg] = useState(null);
+    const padding = 2;
+    const remake = () => {
+        if (htmlref.current !== null) {
+            const html = htmlref.current;
+            toCanvas(html, { pixelRatio: 2 }).then((canvas) => {
+                setImg(canvas);
+            })
+        }
+    }
+    useEffect(() => {
+        if(isEditing)
+            remake();
+    }, [value, width, height, isEditing]);
+    return (
+        <React.Fragment>
+            <Html divProps={{ style: { display: isEditing ? "block" : "none", position: "absolute", left: padding+"px", top: padding+"px", width: width-padding + "px", height: height-padding + "px" } }}>
+
+                <textarea
+                    ref={htmlref}
+                    value={value}
+                    onChange={(e) => {
+                        onChange(e);
+                    }}
+                    placeholder="Type here"
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        resize: "none",
+                        outline: "none",
+                    }}
+                />
+
+            </Html>
+            <Rect x={0} y={0} width={width} height={height} fill="silver"/>
+            <Image image={img} x={padding/2} y={padding/2} width={width-padding/2} height={height-padding/2} />
+        </React.Fragment>
+    );
+}
 
 export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setShape, setCursor, urls) => {
     var elem = null;
@@ -135,7 +153,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                     strokeWidth={Number(elem_desc.radius)}
                     tension={0.5}
                     lineCap="round"
-                    globalCompositeOperation={'source-over'}
+                    globalCompositeOperation={'destination-out'}
                 />
                 break;
             case "shapes":
@@ -144,13 +162,13 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                         case "line":
                             elem =
                                 <Line
-                                key={key}
-                                points={[0, 0, elem_desc.shapeProps.width, elem_desc.shapeProps.height]}
-                                stroke={elem_desc.color}
-                                strokeWidth={Number(elem_desc.radius)}
-                                tension={0.5}
-                                lineCap="round"
-                                globalCompositeOperation={'source-over'}
+                                    key={key}
+                                    points={[0, 0, elem_desc.shapeProps.width, elem_desc.shapeProps.height]}
+                                    stroke={elem_desc.color}
+                                    strokeWidth={Number(elem_desc.radius)}
+                                    tension={0.5}
+                                    lineCap="round"
+                                    globalCompositeOperation={'source-over'}
                                 />
 
                             break;
@@ -223,7 +241,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                     shapeProps={elem_desc.shapeProps}
                     isSelected={elem_desc.id === selectedId}
                     onSelect={() => {
-                        //selectShape(elem_desc.id);
+                        selectShape(elem_desc.id);
                     }}
                     onChange={(newAttrs) => {
                         setShape({ ...elem_desc, shapeProps: newAttrs })
@@ -234,9 +252,13 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                         onChange={(e) => {
                             setShape({ ...elem_desc, text: e.target.value })
                         }}
+                        width={elem_desc.shapeProps.width}
+                        height={elem_desc.shapeProps.height}
+                        isEditing={elem_desc.id === selectedId}
                         onEnterDragbox={() => setCursor("move")}
                         onLeaveDragbox={() => setCursor("default")}
                     />
+
                 </Transformable>;
                 break;
             case "image":

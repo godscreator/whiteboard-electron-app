@@ -1,11 +1,14 @@
-<Transformable
-                        key={key + ":Transformable"}
-                        shapeProps={elem_desc.shapeProps}
-                        isSelected={elem_desc.id === selectedId}
-                        onSelect={() => {
-                            selectShape(elem_desc.id);
-                        }}
-                        onChange={(newAttrs) => {
-                            setShape(newAttrs)
-                        }}
-                    >
+
+
+
+
+
+useEffect(() => {
+    if (!isSelected && htmlref.current) {
+        toCanvas(htmlref.current, { canvasWidth: width, canvasHeight: height }).then((canvas) => {
+
+            shaperef.current.image(canvas)
+        })
+    }
+}, [isSelected, width, height])
+

@@ -11,7 +11,6 @@
 }
 
 #boardcanvas {
-  padding: 16px;
   grid-area: whiteboard;
   grid-template: "canvas";
   z-index: 1;
@@ -21,7 +20,8 @@
   display: grid;
   grid-template: 
     "header header header" 50px
-    "toolbox  whiteboard ." 1fr
+    "toolbox  whiteboard ." 19fr
+    ". . ." 1fr
     / 2fr 17fr 1fr;
   grid-gap: 20px;
 }
@@ -31,7 +31,7 @@
   height: 100%;
   border: 1px solid;
   border-radius: 20px;
-  padding: 16px;
+  overflow: hidden;
 }
 
 

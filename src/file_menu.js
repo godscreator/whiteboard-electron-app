@@ -104,7 +104,8 @@ export default function Topbar(props) {
                             var urls = props.urls;
                             urls[fname] = uri;
                             props.setUrls(urls);
-                            props.setData(props.data.concat([{ name: "image", fname: fname, id: props.data.length, shapeProps: { x: 0, y: 0, width: 100, height: 100, rotation: 0 } }]))
+                            props.setData(props.data.concat([{ name: "image", fname: fname, id: props.count, shapeProps: { x: 0, y: 0, width: 100, height: 100, rotation: 0 } }]))
+                            props.setCount(props.count + 1);
                             console.log("image inserted");
                         }
 
