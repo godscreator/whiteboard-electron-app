@@ -1,8 +1,9 @@
 import React, { useRef, useEffect, useState } from "react";
-import { Line, Rect, Transformer, Group, Image, Ellipse } from 'react-konva';
+import { Line, Rect, Transformer, Group, Image, Ellipse, Circle } from 'react-konva';
 import { Html } from "react-konva-utils";
 import useImage from 'use-image';
 import { toCanvas } from 'html-to-image';
+import TransformableHtml from './editable_canvas_element.js';
 
 const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange }) => {
     const shapeRef = useRef();
@@ -29,6 +30,24 @@ const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange })
                         ...shapeProps,
                         x: e.target.x(),
                         y: e.target.y(),
+                    });
+                }}
+                onTransform={(e) => {
+                    const node = shapeRef.current;
+                    const scaleX = node.scaleX();
+                    const scaleY = node.scaleY();
+
+                    // we will reset it back
+                    node.scaleX(1);
+                    node.scaleY(1);
+                    onChange({
+                        ...shapeProps,
+                        x: node.x(),
+                        y: node.y(),
+                        // set minimal value
+                        width: Math.max(5, node.width() * scaleX),
+                        height: Math.max(node.height() * scaleY),
+                        rotation: node.rotation(),
                     });
                 }}
                 onTransformEnd={(e) => {
@@ -101,10 +120,10 @@ const MovableText = ({ value, width, height, onChange, isEditing, onEnterDragbox
             }
             resolve();
         });
-        
+
     }
     useEffect(() => {
-        if(isEditing)
+        if (isEditing)
             remake();
     }, [value, width, height, isEditing]);
     useEffect(() => {
@@ -116,31 +135,29 @@ const MovableText = ({ value, width, height, onChange, isEditing, onEnterDragbox
     }, []);
     return (
         <React.Fragment>
-            <Html divProps={{ style: { display: isEditing || isFirstRender ? "block" : "none", position: "absolute", left: padding+"px", top: padding+"px", width: width-padding + "px", height: height-padding + "px" } }}>
+            <Html divProps={{ style: { display: isEditing || isFirstRender ? "block" : "none", position: "absolute", left: padding + "px", top: padding + "px", width: width - 2 * padding + "px", height: height - 2 * padding + "px" } }}>
                 <div ref={htmlref} style={{
                     width: "100%",
                     height: "100%",
-                    resize: "none",
-                    outline: "none",
                 }}>
-                <textarea
-                    ref={htmlref}
-                    value={value}
-                    onChange={(e) => {
-                        onChange(e);
-                    }}
-                    placeholder="Type here"
-                    style={{
-                        width: "100%",
-                        height: "100%",
-                        resize: "none",
-                        outline: "none",
-                    }}
-                />
+                    <textarea
+                        ref={htmlref}
+                        value={value}
+                        onChange={(e) => {
+                            onChange(e);
+                        }}
+                        placeholder="Type here"
+                        style={{
+                            width: "100%",
+                            height: "100%",
+                            resize: "none",
+                            outline: "none",
+                        }}
+                    />
                 </div>
             </Html>
-            <Rect x={0} y={0} width={width} height={height} fill="silver"/>
-            <Image image={img} x={padding/2} y={padding/2} width={width-padding/2} height={height-padding/2} />
+            <Rect x={0} y={0} width={width} height={height} fill="silver" />
+            <Image image={img} x={padding} y={padding} width={width - 2 * padding} height={height - 2 * padding} />
         </React.Fragment>
     );
 }
@@ -252,7 +269,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                 >{elem}</Transformable>;
                 break;
             case "text":
-                elem = <Transformable
+                elem = <TransformableHtml
                     key={key + ": Transformable"}
                     shapeProps={elem_desc.shapeProps}
                     isSelected={elem_desc.id === selectedId}
@@ -263,19 +280,20 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                         setShape({ ...elem_desc, shapeProps: newAttrs })
                     }}
                 >
-                    <MovableText
+                    <textarea
                         value={elem_desc.text}
                         onChange={(e) => {
-                            setShape({ ...elem_desc, text: e.target.value })
+                            setShape({ ...elem_desc, text: e.target.value });
                         }}
-                        width={elem_desc.shapeProps.width}
-                        height={elem_desc.shapeProps.height}
-                        isEditing={elem_desc.id === selectedId}
-                        onEnterDragbox={() => setCursor("move")}
-                        onLeaveDragbox={() => setCursor("default")}
+                        placeholder="Type here"
+                        style={{
+                            width: "100%",
+                            height: "100%",
+                            resize: "none",
+                            outline: "none",
+                        }}
                     />
-
-                </Transformable>;
+                </TransformableHtml>;
                 break;
             case "image":
                 elem = <Transformable

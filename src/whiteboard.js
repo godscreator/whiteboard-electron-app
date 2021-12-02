@@ -37,6 +37,43 @@ export default function Whiteboard() {
         });
     }
 
+    const clear = () => {
+        setElems([]);
+        setTempElem({});
+        setCount(0);
+        setUrls({});
+        setTool({ name: "select" });
+        setIsDrawing(false);
+        selectShape(null);
+        setCursor("default");
+    }
+
+    const load_elements = (elements) => {
+        var tmp = elements.slice();
+        var c = 0;
+        tmp.forEach((e, i) => {
+            e.id = c;
+            c++;
+        })
+        setCount(c);
+        setElems(tmp);
+    }
+
+    const add_url = (name, url) => {
+        urls[name] = url;
+        setUrls(urls);
+    }
+
+    const get_data = () => {
+        return { elements: elems, urls: urls };
+    }
+
+    const insert_image = (name) => {
+        setElems(elems.concat([{ name: "image", fname: name, id: count, shapeProps: { x: 0, y: 0, width: 100, height: 100, rotation: 0 } }]))
+        setCount(count + 1);
+        console.log("image inserted");
+    }
+
     const brush = (action, point) => {
         selectShape(null);
         switch (action) {
@@ -170,9 +207,11 @@ export default function Whiteboard() {
         <div id="container">
             <div id="topbar">
                 <Topbar
-                    data={elems} setData={(d) => setElems(d)}
-                    urls={urls} setUrls={(u) => setUrls(u)}
-                    count={count} setCount={c => setCount(c)}
+                    load_elements={(elements) => load_elements(elements)}
+                    add_url = {(name,url)=>add_url(name,url)}
+                    get_data={() => get_data()}
+                    insert_image={(name) => insert_image(name)}
+                    clear={()=>clear()}
                     get_image_url={() => get_image_url()}
                     refresh={() => refresh()}
                 />
