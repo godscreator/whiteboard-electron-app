@@ -14,16 +14,19 @@
   grid-area: whiteboard;
   grid-template: "canvas";
   z-index: 1;
+  padding: 5px;
 }
 
 #container {
   display: grid;
   grid-template: 
-    "header header header" 50px
-    "toolbox  whiteboard ." 19fr
-    ". . ." 1fr
-    / 2fr 17fr 1fr;
-  grid-gap: 20px;
+    "header header header " 50px
+    ". . ." 10px
+    "toolbox  whiteboard  ." 1fr
+    ". . ." 10px
+    / 2fr 18fr 10px;
+  grid-gap: 5px;
+  
 }
 
 .white-board {
@@ -34,4 +37,25 @@
   overflow: hidden;
 }
 
+#menu {
+  display: none;
+  position: absolute;
+  width: 60px;
+  background-color: white;
+  box-shadow: 0 0 5px grey;
+  border-radius: 3px;
+  z-index: 1000000000;
+}
+
+#menu button {
+  width: 100%;
+  background-color: white;
+  border: none;
+  margin: 0;
+  padding: 10px;
+}
+
+#menu button:hover {
+  background-color: lightgray;
+}
 

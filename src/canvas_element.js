@@ -1,9 +1,7 @@
-import React, { useRef, useEffect, useState } from "react";
-import { Line, Rect, Transformer, Group, Image, Ellipse, Circle } from 'react-konva';
-import { Html } from "react-konva-utils";
+import React, { useRef, useEffect } from "react";
+import { Line, Rect, Transformer, Group, Image, Ellipse } from 'react-konva';
 import useImage from 'use-image';
-import { toCanvas } from 'html-to-image';
-import TransformableHtml from './editable_canvas_element.js';
+import { TextBox } from './editable_canvas_element.js';
 
 const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange }) => {
     const shapeRef = useRef();
@@ -25,6 +23,9 @@ const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange })
                 ref={shapeRef}
                 {...shapeProps}
                 draggable
+                onDragStart={(e) => {
+                    onSelect();
+                }}
                 onDragEnd={(e) => {
                     onChange({
                         ...shapeProps,
@@ -93,10 +94,17 @@ const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange })
         </React.Fragment >
     );
 };
-const URLImage = ({ x, y, width, height, src }) => {
-    const [img] = useImage(src);
+const URLImage = ({ x, y, width, height, src, set_shape, id }) => {
+    const [img, status] = useImage(src);
+    useEffect(() => {
+        if (width < 0 && height < 0 && status === "loaded") {
+            set_shape(img.width, img.height);
+        }
+        // eslint-disable-next-line
+    }, [status])
     return (
         <Image
+            id={id}
             image={img}
             x={x}
             y={y}
@@ -105,62 +113,6 @@ const URLImage = ({ x, y, width, height, src }) => {
         />
     );
 };
-
-const MovableText = ({ value, width, height, onChange, isEditing, onEnterDragbox, onLeaveDragbox }) => {
-    const htmlref = useRef(null);
-    const [img, setImg] = useState(null);
-    const [isFirstRender, setIsFirstRender] = useState(true);
-    const padding = 2;
-    const remake = () => {
-        return new Promise(async (resolve, reject) => {
-            if (htmlref.current !== null) {
-                const html = htmlref.current;
-                var canvas = await toCanvas(html, { pixelRatio: 2 });
-                setImg(canvas);
-            }
-            resolve();
-        });
-
-    }
-    useEffect(() => {
-        if (isEditing)
-            remake();
-    }, [value, width, height, isEditing]);
-    useEffect(() => {
-        const refresh = async () => {
-            await remake();
-            setIsFirstRender(false);
-        }
-        refresh();
-    }, []);
-    return (
-        <React.Fragment>
-            <Html divProps={{ style: { display: isEditing || isFirstRender ? "block" : "none", position: "absolute", left: padding + "px", top: padding + "px", width: width - 2 * padding + "px", height: height - 2 * padding + "px" } }}>
-                <div ref={htmlref} style={{
-                    width: "100%",
-                    height: "100%",
-                }}>
-                    <textarea
-                        ref={htmlref}
-                        value={value}
-                        onChange={(e) => {
-                            onChange(e);
-                        }}
-                        placeholder="Type here"
-                        style={{
-                            width: "100%",
-                            height: "100%",
-                            resize: "none",
-                            outline: "none",
-                        }}
-                    />
-                </div>
-            </Html>
-            <Rect x={0} y={0} width={width} height={height} fill="silver" />
-            <Image image={img} x={padding} y={padding} width={width - 2 * padding} height={height - 2 * padding} />
-        </React.Fragment>
-    );
-}
 
 export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setShape, setCursor, urls) => {
     var elem = null;
@@ -196,6 +148,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                             elem =
                                 <Line
                                     key={key}
+                                    id={elem_desc.id.toString()}
                                     points={[0, 0, elem_desc.shapeProps.width, elem_desc.shapeProps.height]}
                                     stroke={elem_desc.color}
                                     strokeWidth={Number(elem_desc.radius)}
@@ -209,6 +162,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                             elem =
                                 <Rect
                                     key={key}
+                                    id={elem_desc.id.toString()}
                                     x={0}
                                     y={0}
                                     width={elem_desc.shapeProps.width}
@@ -222,6 +176,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                             elem =
                                 <Rect
                                     key={key}
+                                    id={elem_desc.id.toString()}
                                     x={0}
                                     y={0}
                                     width={elem_desc.shapeProps.width}
@@ -234,6 +189,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                             elem =
                                 <Ellipse
                                     key={key}
+                                    id={elem_desc.id.toString()}
                                     x={elem_desc.shapeProps.width / 2}
                                     y={elem_desc.shapeProps.height / 2}
                                     radiusX={Math.abs(elem_desc.shapeProps.width / 2)}
@@ -247,6 +203,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                             elem =
                                 <Ellipse
                                     key={key}
+                                    id={elem_desc.id.toString()}
                                     x={elem_desc.shapeProps.width / 2}
                                     y={elem_desc.shapeProps.height / 2}
                                     radiusX={Math.abs(elem_desc.shapeProps.width / 2)}
@@ -261,53 +218,50 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                     shapeProps={elem_desc.shapeProps}
                     isSelected={elem_desc.id === selectedId}
                     onSelect={() => {
-                        selectShape(elem_desc.id);
+                        selectShape(key);
                     }}
                     onChange={(newAttrs) => {
-                        setShape({ ...elem_desc, shapeProps: newAttrs })
+                        setShape({ ...elem_desc, shapeProps: newAttrs }, key)
                     }}
                 >{elem}</Transformable>;
                 break;
             case "text":
-                elem = <TransformableHtml
-                    key={key + ": Transformable"}
+                elem = <TextBox
+                    key={key}
                     shapeProps={elem_desc.shapeProps}
                     isSelected={elem_desc.id === selectedId}
+                    id={elem_desc.id.toString()}
                     onSelect={() => {
-                        selectShape(elem_desc.id);
+                        selectShape(key);
                     }}
-                    onChange={(newAttrs) => {
-                        setShape({ ...elem_desc, shapeProps: newAttrs })
+                    onShapeChange={(newAttrs) => {
+                        setShape({ ...elem_desc, shapeProps: newAttrs }, key)
                     }}
-                >
-                    <textarea
-                        value={elem_desc.text}
-                        onChange={(e) => {
-                            setShape({ ...elem_desc, text: e.target.value });
-                        }}
-                        placeholder="Type here"
-                        style={{
-                            width: "100%",
-                            height: "100%",
-                            resize: "none",
-                            outline: "none",
-                        }}
-                    />
-                </TransformableHtml>;
+                    text={elem_desc.text}
+                    onTextChange={(text) => {
+                        setShape({ ...elem_desc, text: text }, key);
+                    }}
+                />;
                 break;
             case "image":
                 elem = <Transformable
                     key={key + ": Transformable"}
-                    shapeProps={elem_desc.shapeProps}
+                    shapeProps={elem_desc.shapeProps > 0 ? { ...elem_desc.shapeProps, width: 100, height: 100 } : elem_desc.shapeProps}
                     isSelected={elem_desc.id === selectedId}
+
                     onSelect={() => {
-                        selectShape(elem_desc.id);
+                        selectShape(key);
                     }}
                     onChange={(newAttrs) => {
-                        setShape({ ...elem_desc, shapeProps: newAttrs })
+                        setShape({ ...elem_desc, shapeProps: newAttrs }, key)
                     }}
                 >
-                    <URLImage x={0} y={0} width={elem_desc.shapeProps.width} height={elem_desc.shapeProps.height} src={urls[elem_desc.fname]} />
+                    <URLImage x={0} y={0}
+                        id={elem_desc.id.toString()}
+                        width={elem_desc.shapeProps.width}
+                        height={elem_desc.shapeProps.height}
+                        src={urls[elem_desc.fname]}
+                        set_shape={(w, h) => setShape({ ...elem_desc, shapeProps: { ...elem_desc.shapeProps, width: w, height: h } }, key)} />
                 </Transformable>;
                 break;
             default:

@@ -49,6 +49,7 @@ export default function Topbar(props) {
                                             if (uri !== null) {
                                                 props.add_url(fname, uri);
                                                 setUrls(urls.concat([uri]));
+                                                props.refresh();
                                             }
                                         });
                                         console.log("The file is loaded.");

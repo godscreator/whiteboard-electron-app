@@ -3,7 +3,7 @@ import { Rect, Transformer, Group, Image, Circle } from 'react-konva';
 import { Html } from "react-konva-utils";
 import { toCanvas } from 'html-to-image';
 
-const  TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChange }) => {
+const  TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChange, id }) => {
     const shapeRef = useRef();
     const trRef = useRef();
 
@@ -21,8 +21,12 @@ const  TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChan
                 onClick={onSelect}
                 onTap={onSelect}
                 ref={shapeRef}
+                
                 {...shapeProps}
                 draggable
+                onDragStart={(e) => {
+                    onSelect();
+                }}
                 onDragEnd={(e) => {
                     onChange({
                         ...shapeProps,
@@ -71,7 +75,7 @@ const  TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChan
                     });
                 }}
             >
-                <Rect x={0} y={-12} width={shapeProps.width} height={shapeProps.height+12} cornerRadius={6} fill={"silver"} />
+                <Rect id={id} x={0} y={-12} width={shapeProps.width} height={shapeProps.height + 12} cornerRadius={6} fill={"silver"}/>
                 <Circle x={shapeProps.width - 8} y={-6} radius={4} fill={"red"} />
                 <ResizableHtml width={shapeProps.width} height={shapeProps.height}>
                     {children}
@@ -128,4 +132,26 @@ const ResizableHtml = ({children, width, height}) => {
     );
 }
 
-export default TransformableHtml;
+export const TextBox = ({text, shapeProps, id, isSelected, onSelect, onShapeChange, onTextChange}) => {
+    return (
+        <TransformableHtml
+            shapeProps={shapeProps}
+            isSelected={isSelected}
+            onSelect={() => { onSelect() }}
+            id={id}
+            onChange={(newAttrs) => {onShapeChange(newAttrs)}}
+        >
+            <textarea
+                value={text}
+                onChange={(e) => {onTextChange(e.target.value)}}
+                placeholder="Type here"
+                style={{
+                    width: "100%",
+                    height: "100%",
+                    resize: "none",
+                    outline: "none",
+                }}
+            />
+        </TransformableHtml>
+    );
+}

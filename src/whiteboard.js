@@ -7,31 +7,19 @@ import { to_canvas_elements } from "./canvas_element";
 
 export default function Whiteboard() {
 
-    const [tool, setTool] = useState({ name: "brush", color: "black", radius: 5 });
-    const [isDrawing, setIsDrawing] = useState(false);
-    const [selectedId, selectShape] = useState(null);
-    const [cursor, setCursor] = useState("default");
-    const [count, setCount] = useState(0);
     const stageref = useRef(null);
     const stageparentref = useRef(null);
-
     const [elems, setElems] = useState([]);
     const [tempElem, setTempElem] = useState(null);
     const [urls, setUrls] = useState({});
 
-    const checkDeselect = (e) => {
-        // deselect when clicked on empty area
-        const clickedOnEmpty = e.target === e.target.getStage();
-        if (clickedOnEmpty) {
-            selectShape(null);
-        }
-    };
+    // filemenu
 
     const get_image_url = () => {
         return new Promise(async (resolve, reject) => {
             var img_url = "";
             if (stageref.current !== null) {
-                img_url = stageref.current.toDataURL({pixelRatio:2});
+                img_url = stageref.current.toDataURL({ pixelRatio: 2 });
             }
             resolve(img_url);
         });
@@ -69,10 +57,15 @@ export default function Whiteboard() {
     }
 
     const insert_image = (name) => {
-        setElems(elems.concat([{ name: "image", fname: name, id: count, shapeProps: { x: 0, y: 0, width: 100, height: 100, rotation: 0 } }]))
+        setElems(elems.concat([{ name: "image", fname: name, id: count, shapeProps: { x: 0, y: 0, width: -1, height: -1, rotation: 0 } }]))
         setCount(count + 1);
         console.log("image inserted");
     }
+
+    // Toolbox 
+
+    const [tool, setTool] = useState({ name: "brush", color: "black", radius: 5 });
+    const [isDrawing, setIsDrawing] = useState(false);
 
     const brush = (action, point) => {
         selectShape(null);
@@ -84,22 +77,14 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_move":
-                if (tempElem.points.length >= 10) {
-                    var p = tempElem.points.concat([point.x, point.y]);
-                    var t = { ...tempElem, points: p };
-                    setElems(elems.concat(t));
-                    setTempElem({ ...tool, points: [point.x, point.y], id: count });
-                    setCount(count + 1);
-                } else {
-                    var q = tempElem.points.concat([point.x, point.y]);
-                    setTempElem({ ...tool, points: q, id: count });
-                    setCount(count + 1);
-                }
-
+                var q = tempElem.points.concat([point.x, point.y]);
+                setTempElem({ ...tool, points: q, id: count });
+                setCount(count + 1);
                 break;
 
             case "mouse_up":
                 setElems(elems.concat(tempElem));
+                console.log("history: id: ", tempElem.id, " prev: ", {}, " now: ", tempElem);
                 setTempElem(null);
                 break;
 
@@ -109,6 +94,7 @@ export default function Whiteboard() {
                     var p2 = tempElem.points.concat([point.x, point.y]);
                     var t2 = { ...tempElem, points: p2 };
                     setElems(elems.concat(t2));
+                    console.log("history: id: ", t2.id, " prev: ", {}, " now: ", t2);
                 }
                 setTempElem(null);
                 break;
@@ -121,22 +107,30 @@ export default function Whiteboard() {
         switch (action) {
 
             case "mouse_down":
-                setElems([...elems, { ...tool, points: [point.x, point.y], id: count }]);
+                setTempElem({ ...tool, points: [point.x, point.y], id: count });
                 setCount(count + 1);
                 break;
 
             case "mouse_move":
-                let last = elems[elems.length - 1];
-                // add point
-                last.points = last.points.concat([point.x, point.y]);
-
-                // replace last
-                elems.splice(elems.length - 1, 1, last);
-                setElems(elems.concat());
-
+                var q = tempElem.points.concat([point.x, point.y]);
+                setTempElem({ ...tool, points: q, id: count });
+                setCount(count + 1);
                 break;
 
             case "mouse_up":
+                setElems(elems.concat(tempElem));
+                console.log("history: id: ", tempElem.id, " prev: ", {}, " now: ", tempElem);
+                setTempElem(null);
+                break;
+
+            case "mouse_leave":
+                setIsDrawing(false);
+                if (tempElem !== null) {
+                    var p2 = tempElem.points.concat([point.x, point.y]);
+                    var t2 = { ...tempElem, points: p2 };
+                    setElems(elems.concat(t2));
+                    console.log("history: id: ", tempElem.id, " prev: ", {}, " now: ", t2);
+                }
                 setTempElem(null);
                 break;
             default:
@@ -166,6 +160,7 @@ export default function Whiteboard() {
 
             case "mouse_up":
                 setElems(elems.concat(tempElem));
+                console.log("history: id: ", tempElem.id, " prev: ", {}, " now: ", tempElem);
                 setTempElem(null);
                 break;
             default:
@@ -179,7 +174,9 @@ export default function Whiteboard() {
         selectShape(null);
         switch (action) {
             case "mouse_up":
-                setElems(elems.concat([{ ...tool, text: "", id: count, shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } }]))
+                var new_elem = { ...tool, text: "", id: count, shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } };
+                setElems(elems.concat([new_elem]))
+                console.log("history: id: ", new_elem.id, " prev: ", {}, " now: ", new_elem);
                 setTool({ name: "select" });
                 selectShape(count);
                 setCount(count + 1);
@@ -195,6 +192,7 @@ export default function Whiteboard() {
     fn_dict["select"] = select;
     fn_dict["text"] = text;
 
+    const [cursor, setCursor] = useState("default");
     const set_cursor = (cursor) => {
         setCursor(cursor)
     }
@@ -203,15 +201,29 @@ export default function Whiteboard() {
         setTool({ name: "select" });
     }
 
+    // select and delete 
+    const [selectedId, selectShape] = useState(null);
+    const [currentShapeIndex, setCurrentShapeIndex] = useState(-1);
+    const [count, setCount] = useState(0);
+    const checkDeselect = (e) => {
+        // deselect when clicked on empty area
+        const clickedOnEmpty = e.target === e.target.getStage();
+        if (clickedOnEmpty) {
+            selectShape(null);
+        }
+    };
+
+    const menuref = useRef(null);
+
     return (
         <div id="container">
             <div id="topbar">
                 <Topbar
                     load_elements={(elements) => load_elements(elements)}
-                    add_url = {(name,url)=>add_url(name,url)}
+                    add_url={(name, url) => add_url(name, url)}
                     get_data={() => get_data()}
                     insert_image={(name) => insert_image(name)}
-                    clear={()=>clear()}
+                    clear={() => clear()}
                     get_image_url={() => get_image_url()}
                     refresh={() => refresh()}
                 />
@@ -224,7 +236,7 @@ export default function Whiteboard() {
                 <Stage ref={stageref}
                     style={{ cursor: cursor }}
                     width={stageparentref.current ? stageparentref.current.offsetWidth : 100}
-                    height={600}
+                    height={650}
                     onMouseDown={evt => {
 
                         setIsDrawing(true);
@@ -234,6 +246,9 @@ export default function Whiteboard() {
                         const point = { x: p.x, y: p.y };
                         fn_dict[tool.name](action, point);
                         checkDeselect(evt);
+                        if (menuref.current) {
+                            menuref.current.style.display = "none";
+                        }
                     }}
                     onMousemove={evt => {
 
@@ -269,17 +284,47 @@ export default function Whiteboard() {
                         const point = { x: p.x, y: p.y };
                         fn_dict[tool.name](action, point);
                     }}
+                    onContextMenu={e => {
+                        const stage = e.target.getStage();
+                        if (e.target !== stage) {
+                            var id = Number(e.target.id());
+                            console.log("id: ", id);
+                            elems.forEach((elem, i) => {
+                                if (elem.id === id) {
+                                    setCurrentShapeIndex(i);
+                                    console.log("found id");
+                                    if (menuref.current) {
+                                        console.log("displaying menu");
+                                        var menuNode = menuref.current;
+                                        menuNode.style.display = 'block';
+                                        var containerRect = stage.container().getBoundingClientRect();
+                                        menuNode.style.top =
+                                            containerRect.top + stage.getPointerPosition().y + 'px';
+                                        menuNode.style.left =
+                                            containerRect.left + stage.getPointerPosition().x + 'px';
+                                    }
+                                }
+                            })
+                        } else {
+                            setCurrentShapeIndex(-1);
+                            if (menuref.current) {
+                                menuref.current.style.display = "none";
+                            }
+                        }
+                    }}
                 >
                     <Layer>
                         {elems.map((line, i) => to_canvas_elements(line, i, selectedId,
-                            (id) => {
-                                selectShape(id);
+                            (k) => {
+                                selectShape(elems[k].id);
                                 setTool({ name: "select" });
                             },
-                            (shape) => {
+                            (shape, k) => {
                                 var shapes = elems.slice();
-                                shapes[i] = shape;
+                                var temp_shape = shapes[k];
+                                shapes[k] = shape;
                                 setElems(shapes);
+                                console.log("history: id: ", temp_shape.id, " prev: ", temp_shape, " now: ", shape);
                                 setTool({ name: "select" });
                             }
                             , set_cursor
@@ -301,6 +346,33 @@ export default function Whiteboard() {
                         )}
                     </Layer>
                 </Stage>
+                <div ref={menuref} id="menu">
+                    <div>
+                        <button id="pulse-button"
+                            onClick={() => {
+                                console.log("pulse: ", currentShapeIndex);
+                            }}
+                        >
+                            Pulse
+                        </button>
+                        <button id="delete-button"
+                            onClick={() => {
+                                console.log("delete: ", currentShapeIndex);
+                                if (currentShapeIndex >= 0) {
+                                    var shapes = elems.slice();
+                                    shapes[currentShapeIndex] = {};
+                                    setElems(shapes);
+                                    setCurrentShapeIndex(-1);
+                                    if (menuref.current) {
+                                        menuref.current.style.display = "none";
+                                    }
+                                }
+                            }}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
