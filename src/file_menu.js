@@ -1,5 +1,5 @@
 import "./file_menu_styles.css";
-import React, { useState } from "react";
+import React, { forwardRef, useImperativeHandle, useState } from "react";
 import Navbar from 'react-bootstrap/Navbar'
 import NavDropdown from 'react-bootstrap/Navdropdown'
 import Nav from 'react-bootstrap/Nav'
@@ -9,14 +9,15 @@ var JSZip = require("jszip");
 var JSZipUtils = require("jszip-utils");
 
 
-export default function Topbar(props) {
+const Topbar = forwardRef((props, ref) => {
     const [filename, setFilename] = useState("");
+    const [folderpath, setfolderpath] = useState("");
     const [urls, setUrls] = useState([]);
 
 
     const new_file = () => {
         props.clear();
-        urls.forEach((url,i)=> {
+        urls.forEach((url, i) => {
             URL.revokeObjectURL(url);
         });
         setUrls([]);
@@ -33,7 +34,8 @@ export default function Topbar(props) {
         },
             result => {
                 var filepath = result[0];
-                setFilename(filepath);
+                setFilename(window.electron.path_basename(filepath));
+                setfolderpath(window.electron.path_dirname(filepath));
 
                 window.electron.read_file(filepath, null,
                     result => {
@@ -145,7 +147,7 @@ export default function Topbar(props) {
     }
 
     const save_file = () => {
-        if (filename === "") {
+        if (folderpath === "") {
             window.electron.save_dialog({
                 filters: [
                     { name: "WhiteBoard File", extensions: ['wbrd'] },
@@ -153,29 +155,45 @@ export default function Topbar(props) {
                 defaultPath: "untitled"
             },
                 async (filepath) => {
-                    setFilename(filepath);
+                    setFilename(window.electron.path_basename(filepath));
+                    setfolderpath(window.electron.path_dirname(filepath));
                     save(filepath);
                 },
                 err => console.log(err)
             );
         } else {
-            save(filename);
+            save(window.electron.path_join(folderpath,filename));
         }
     }
 
 
-    const export_png = async () => { 
+    const export_png = async () => {
         var img_url = await props.get_image_url();
         if (img_url !== "") {
             window.electron.download(img_url, { filename: "" });
         }
     }
 
+    useImperativeHandle(ref, () => ({
+        "save": () => save_file(),
+        "open": () => open_file(),
+        "new": () => new_file()
+    }));
+
     return (
         <div className="top-bar">
             <Navbar expand="lg" bg="dark" variant="dark">
                 <Container>
                     <Navbar.Brand href=".">White Board</Navbar.Brand>
+                    <Navbar.Text href=".">
+                        <input
+                            type="text"
+                            value={filename}
+                            onChange={(e) => setFilename(e.target.value)}
+                            placeholder="file name"
+                            style={{resize:"none",outline:"none",height:"100%"}}
+                        />
+                    </Navbar.Text>
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
                     <Navbar.Collapse id="basic-navbar-nav">
                         <Nav className="me-auto">
@@ -196,4 +214,6 @@ export default function Topbar(props) {
             </Navbar>
         </div>
     );
-};
+});
+
+export default Topbar;

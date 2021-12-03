@@ -1,4 +1,22 @@
-
+{elems.map((line, i) => to_canvas_elements(line, i, selectedId,
+                            (k) => {
+                                selectShape(elems[k].id);
+                                setTool({ name: "select" });
+                            },
+                            (shape, k) => {
+                                var shapes = elems.slice();
+                                var temp_shape = shapes[k];
+                                shapes[k] = shape;
+                                
+                                change_item(temp_shape.id, shape);
+                                
+                                setElems(shapes);
+                                console.log("history: id: ", temp_shape.id, " prev: ", temp_shape, " now: ", shape);
+                                setTool({ name: "select" });
+                            }
+                            , set_cursor
+                            , urls
+                        ))}
 
 
 

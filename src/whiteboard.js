@@ -9,11 +9,124 @@ export default function Whiteboard() {
 
     const stageref = useRef(null);
     const stageparentref = useRef(null);
-    const [elems, setElems] = useState([]);
     const [tempElem, setTempElem] = useState(null);
     const [urls, setUrls] = useState({});
 
+    // display of items
+    const [items, setItems] = useState({});
+    const [item_order, setItemOrder] = useState([]);
+    const [id_count, setIdCount] = useState(0);
+
+
+    const add_item = (item, to_history = true) => {
+        item.id = id_count;
+        items[id_count] = item;
+        setItems(items);
+        setItemOrder(item_order.concat([id_count]));
+        if (to_history)
+            add_to_history({ type: "add", id: id_count });
+        setIdCount(id_count + 1);
+        return id_count + 1;
+    }
+
+    const remove_item = (id, to_history = true) => {
+        if (to_history)
+            add_to_history({ type: "remove", value: items[id] });
+        var c_items = { ...items };
+        delete c_items[id];
+        setItems(c_items);
+        const index = item_order.indexOf(id);
+        var c_item_order = item_order.slice();
+        if (index > -1) {
+            c_item_order.splice(index, 1);
+        }
+        setItemOrder(c_item_order);
+    }
+
+    const change_item = (id, new_value, to_history = true) => {
+        new_value.id = id;
+        var old_value = items[id];
+        items[id] = new_value;
+        setItems(items);
+        if (to_history)
+            add_to_history({ type: "change", id: id, old_value: old_value });
+        return new_value;
+    }
+
+
+    // undo and redo
+
+    const [history, setHistory] = useState([]);
+    const [redohistory, setRedoHistory] = useState([]);
+    const undo = () => {
+        var chistory = history.slice();
+        var h = chistory.pop();
+        let r;
+        if (h) {
+            switch (h.type) {
+                case "add":
+                    remove_item(h.id, false);
+                    r = { type: "add", value: items[h.id] };
+                    break;
+                case "remove":
+                    var id = add_item(h.value, false);
+                    r = { type: "remove", id: id };
+                    break;
+                case "change":
+                    var new_value = change_item(h.id, h.old_value, false);
+                    r = { type: "change", id: h.id, new_value: new_value };
+                    break;
+                default:
+            }
+            setRedoHistory(redohistory.concat(r));
+            setHistory(chistory);
+        }
+    }
+    const redo = () => {
+        var rhistory = redohistory.slice();
+        var r = rhistory.pop();
+        if (r) {
+            switch (r.type) {
+                case "add":
+                    add_item(r.value);
+                    break;
+                case "remove":
+                    remove_item(r.id);
+                    break;
+                case "change":
+                    change_item(r.id, r.new_value);
+                    break;
+                default:
+            }
+            setRedoHistory(rhistory);
+        }
+    }
+    const add_to_history = (h) => {
+        setHistory(history.concat(h));
+        setRedoHistory([]);
+    }
+
+    // select
+
+    const [selectedId, selectShape] = useState(null);
+    const [currentShapeIndex, setCurrentShapeIndex] = useState(-1);
+    const [currentShapeId, setCurrentShapeId] = useState(-1);
+    const [count, setCount] = useState(0);
+    const menuref = useRef(null); // reference to right click menu
+
+    const checkDeselect = (e) => {
+        // deselect when clicked on empty area
+        const clickedOnEmpty = e.target === e.target.getStage();
+        if (clickedOnEmpty) {
+            selectShape(null);
+        }
+    };
+
+
+
     // filemenu
+
+    const topbarref = useRef(null);
 
     const get_image_url = () => {
         return new Promise(async (resolve, reject) => {
@@ -26,8 +139,10 @@ export default function Whiteboard() {
     }
 
     const clear = () => {
-        setElems([]);
+        setItems({});
+        setItemOrder([]);
         setTempElem({});
+        setIdCount(0);
         setCount(0);
         setUrls({});
         setTool({ name: "select" });
@@ -37,14 +152,20 @@ export default function Whiteboard() {
     }
 
     const load_elements = (elements) => {
-        var tmp = elements.slice();
+        clear();
+        var c_items = {};
+        var c_item_order = [];
         var c = 0;
-        tmp.forEach((e, i) => {
-            e.id = c;
+        var elems = elements.slice();
+        for (var i = 0; i < elems.length; i++) {
+            elems[i].id = c;
+            c_items[c] = elems[i];
+            c_item_order.push(elems[i].id);
             c++;
-        })
-        setCount(c);
-        setElems(tmp);
+        }
+        setIdCount(c);
+        setItems(c_items);
+        setItemOrder(c_item_order);
     }
 
     const add_url = (name, url) => {
@@ -53,12 +174,13 @@ export default function Whiteboard() {
     }
 
     const get_data = () => {
+        var elems = item_order.map((id, i) => items[id]);
+        console.log("elems: ", elems);
         return { elements: elems, urls: urls };
     }
 
     const insert_image = (name) => {
-        setElems(elems.concat([{ name: "image", fname: name, id: count, shapeProps: { x: 0, y: 0, width: -1, height: -1, rotation: 0 } }]))
-        setCount(count + 1);
+        add_item({ name: "image", fname: name, id: count, shapeProps: { x: 0, y: 0, width: -1, height: -1, rotation: 0 } });
         console.log("image inserted");
     }
 
@@ -83,8 +205,7 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_up":
-                setElems(elems.concat(tempElem));
-                console.log("history: id: ", tempElem.id, " prev: ", {}, " now: ", tempElem);
+                add_item(tempElem);
                 setTempElem(null);
                 break;
 
@@ -93,8 +214,7 @@ export default function Whiteboard() {
                 if (tempElem !== null) {
                     var p2 = tempElem.points.concat([point.x, point.y]);
                     var t2 = { ...tempElem, points: p2 };
-                    setElems(elems.concat(t2));
-                    console.log("history: id: ", t2.id, " prev: ", {}, " now: ", t2);
+                    add_item(t2);
                 }
                 setTempElem(null);
                 break;
@@ -118,8 +238,7 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_up":
-                setElems(elems.concat(tempElem));
-                console.log("history: id: ", tempElem.id, " prev: ", {}, " now: ", tempElem);
+                add_item(tempElem);
                 setTempElem(null);
                 break;
 
@@ -128,8 +247,7 @@ export default function Whiteboard() {
                 if (tempElem !== null) {
                     var p2 = tempElem.points.concat([point.x, point.y]);
                     var t2 = { ...tempElem, points: p2 };
-                    setElems(elems.concat(t2));
-                    console.log("history: id: ", tempElem.id, " prev: ", {}, " now: ", t2);
+                    add_item(t2);
                 }
                 setTempElem(null);
                 break;
@@ -159,8 +277,7 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_up":
-                setElems(elems.concat(tempElem));
-                console.log("history: id: ", tempElem.id, " prev: ", {}, " now: ", tempElem);
+                add_item(tempElem);
                 setTempElem(null);
                 break;
             default:
@@ -168,6 +285,7 @@ export default function Whiteboard() {
     };
 
     const select = (action, point) => {
+        setTempElem(null);
     }
 
     const text = (action, point) => {
@@ -175,8 +293,7 @@ export default function Whiteboard() {
         switch (action) {
             case "mouse_up":
                 var new_elem = { ...tool, text: "", id: count, shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } };
-                setElems(elems.concat([new_elem]))
-                console.log("history: id: ", new_elem.id, " prev: ", {}, " now: ", new_elem);
+                add_item(new_elem);
                 setTool({ name: "select" });
                 selectShape(count);
                 setCount(count + 1);
@@ -201,24 +318,42 @@ export default function Whiteboard() {
         setTool({ name: "select" });
     }
 
-    // select and delete 
-    const [selectedId, selectShape] = useState(null);
-    const [currentShapeIndex, setCurrentShapeIndex] = useState(-1);
-    const [count, setCount] = useState(0);
-    const checkDeselect = (e) => {
-        // deselect when clicked on empty area
-        const clickedOnEmpty = e.target === e.target.getStage();
-        if (clickedOnEmpty) {
-            selectShape(null);
-        }
-    };
+    const on_select_id = (id) => {
+        selectShape(id);
+        setTool({ name: "select" });
+    }
 
-    const menuref = useRef(null);
+    const on_shape_change = (shape, id) => {
+        change_item(id, shape);
+        setTool({ name: "select" });
+    }
 
     return (
-        <div id="container">
+        <div id="container"
+            onKeyDown={e => {
+                if ((e.ctrlKey || e.metaKey) && e.code === "KeyN") {
+                    console.log("new pressed");
+                    if (topbarref.current) {
+                        topbarref.current.new();
+                    }
+                } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyO") {
+                    console.log("open pressed");
+                    if (topbarref.current) {
+                        topbarref.current.open();
+                    }
+                }
+                else if ((e.ctrlKey || e.metaKey) && e.code === "KeyS") {
+                    console.log("save pressed");
+                    if (topbarref.current) {
+                        topbarref.current.save();
+                    }
+                }
+            }}
+            tabIndex="0"
+        >
             <div id="topbar">
                 <Topbar
+                    ref={topbarref}
                     load_elements={(elements) => load_elements(elements)}
                     add_url={(name, url) => add_url(name, url)}
                     get_data={() => get_data()}
@@ -232,7 +367,17 @@ export default function Whiteboard() {
             <div id="toolbox">
                 <Toolbox tool={tool} onToolChangeHandler={(t) => setTool(t)} />
             </div>
-            <div ref={stageparentref} id="boardcanvas" className="white-board">
+            <div ref={stageparentref} id="boardcanvas" className="white-board"
+                onKeyDown={e => {
+                    if ((e.ctrlKey || e.metaKey) && e.code === "KeyZ") {
+                        undo();
+                    } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyR") {
+                        e.preventDefault();
+                        redo();
+                    }
+                }}
+                tabIndex="0"
+            >
                 <Stage ref={stageref}
                     style={{ cursor: cursor }}
                     width={stageparentref.current ? stageparentref.current.offsetWidth : 100}
@@ -289,24 +434,21 @@ export default function Whiteboard() {
                         if (e.target !== stage) {
                             var id = Number(e.target.id());
                             console.log("id: ", id);
-                            elems.forEach((elem, i) => {
-                                if (elem.id === id) {
-                                    setCurrentShapeIndex(i);
-                                    console.log("found id");
-                                    if (menuref.current) {
-                                        console.log("displaying menu");
-                                        var menuNode = menuref.current;
-                                        menuNode.style.display = 'block';
-                                        var containerRect = stage.container().getBoundingClientRect();
-                                        menuNode.style.top =
-                                            containerRect.top + stage.getPointerPosition().y + 'px';
-                                        menuNode.style.left =
-                                            containerRect.left + stage.getPointerPosition().x + 'px';
-                                    }
-                                }
-                            })
+                            setCurrentShapeId(id);
+                            console.log("found id");
+                            if (menuref.current) {
+                                console.log("displaying menu");
+                                var menuNode = menuref.current;
+                                menuNode.style.display = 'block';
+                                var containerRect = stage.container().getBoundingClientRect();
+                                menuNode.style.top =
+                                    containerRect.top + stage.getPointerPosition().y + 'px';
+                                menuNode.style.left =
+                                    containerRect.left + stage.getPointerPosition().x + 'px';
+                            }
                         } else {
                             setCurrentShapeIndex(-1);
+                            setCurrentShapeId(-1);
                             if (menuref.current) {
                                 menuref.current.style.display = "none";
                             }
@@ -314,35 +456,19 @@ export default function Whiteboard() {
                     }}
                 >
                     <Layer>
-                        {elems.map((line, i) => to_canvas_elements(line, i, selectedId,
-                            (k) => {
-                                selectShape(elems[k].id);
-                                setTool({ name: "select" });
-                            },
-                            (shape, k) => {
-                                var shapes = elems.slice();
-                                var temp_shape = shapes[k];
-                                shapes[k] = shape;
-                                setElems(shapes);
-                                console.log("history: id: ", temp_shape.id, " prev: ", temp_shape, " now: ", shape);
-                                setTool({ name: "select" });
-                            }
-                            , set_cursor
-                            , urls
+                        {item_order.map((id, i) => to_canvas_elements(items[id], i, selectedId,
+                            on_select_id,
+                            on_shape_change,
+                            set_cursor,
+                            urls
                         ))}
                     </Layer>
                     <Layer listening={false}>
                         {tempElem && to_canvas_elements(tempElem, 200, selectedId,
-                            (id) => {
-                                selectShape(id);
-                                setTool({ name: "select" });
-                            },
-                            (shape) => {
-                                setTempElem(shape);
-                                setTool({ name: "select" });
-                            }
-                            , set_cursor
-                            , urls
+                            on_select_id,
+                            on_shape_change,
+                            set_cursor,
+                            urls
                         )}
                     </Layer>
                 </Stage>
@@ -357,15 +483,12 @@ export default function Whiteboard() {
                         </button>
                         <button id="delete-button"
                             onClick={() => {
-                                console.log("delete: ", currentShapeIndex);
-                                if (currentShapeIndex >= 0) {
-                                    var shapes = elems.slice();
-                                    shapes[currentShapeIndex] = {};
-                                    setElems(shapes);
-                                    setCurrentShapeIndex(-1);
-                                    if (menuref.current) {
-                                        menuref.current.style.display = "none";
-                                    }
+                                if (menuref.current) {
+                                    menuref.current.style.display = "none";
+                                }
+                                if (currentShapeId >= 0) {
+                                    remove_item(currentShapeId);
+                                    setCurrentShapeId(-1);
                                 }
                             }}
                         >

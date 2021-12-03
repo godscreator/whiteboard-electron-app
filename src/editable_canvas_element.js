@@ -3,7 +3,7 @@ import { Rect, Transformer, Group, Image, Circle } from 'react-konva';
 import { Html } from "react-konva-utils";
 import { toCanvas } from 'html-to-image';
 
-const  TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChange, id }) => {
+const TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChange, id }) => {
     const shapeRef = useRef();
     const trRef = useRef();
 
@@ -21,7 +21,7 @@ const  TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChan
                 onClick={onSelect}
                 onTap={onSelect}
                 ref={shapeRef}
-                
+
                 {...shapeProps}
                 draggable
                 onDragStart={(e) => {
@@ -32,24 +32,6 @@ const  TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChan
                         ...shapeProps,
                         x: e.target.x(),
                         y: e.target.y(),
-                    });
-                }}
-                onTransform={(e) => {
-                    const node = shapeRef.current;
-                    const scaleX = node.scaleX();
-                    const scaleY = node.scaleY();
-
-                    // we will reset it back
-                    node.scaleX(1);
-                    node.scaleY(1);
-                    onChange({
-                        ...shapeProps,
-                        x: node.x(),
-                        y: node.y(),
-                        // set minimal value
-                        width: Math.max(5, node.width() * scaleX),
-                        height: Math.max(node.height() * scaleY),
-                        rotation: node.rotation(),
                     });
                 }}
                 onTransformEnd={(e) => {
@@ -75,7 +57,7 @@ const  TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChan
                     });
                 }}
             >
-                <Rect id={id} x={0} y={-12} width={shapeProps.width} height={shapeProps.height + 12} cornerRadius={6} fill={"silver"}/>
+                <Rect id={id} x={0} y={-12} width={shapeProps.width} height={shapeProps.height+ 12} cornerRadius={6} fill={"silver"} />
                 <Circle x={shapeProps.width - 8} y={-6} radius={4} fill={"red"} />
                 <ResizableHtml width={shapeProps.width} height={shapeProps.height}>
                     {children}
@@ -100,7 +82,7 @@ const  TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChan
     );
 };
 
-const ResizableHtml = ({children, width, height}) => {
+const ResizableHtml = ({ children, width, height ,isSelected}) => {
     const htmlref = useRef(null);
     const [img, setImg] = useState(null);
     const padding = 0;
@@ -112,7 +94,7 @@ const ResizableHtml = ({children, width, height}) => {
     }
     useEffect(() => {
         remake();
-    }, [ width, height]);
+    }, [width, height]);
     useEffect(() => {
         remake();
     }, []);
@@ -132,18 +114,18 @@ const ResizableHtml = ({children, width, height}) => {
     );
 }
 
-export const TextBox = ({text, shapeProps, id, isSelected, onSelect, onShapeChange, onTextChange}) => {
+export const TextBox = ({ text, shapeProps, id, isSelected, onSelect, onShapeChange, onTextChange }) => {
     return (
         <TransformableHtml
             shapeProps={shapeProps}
             isSelected={isSelected}
             onSelect={() => { onSelect() }}
             id={id}
-            onChange={(newAttrs) => {onShapeChange(newAttrs)}}
+            onChange={(newAttrs) => { onShapeChange(newAttrs) }}
         >
             <textarea
                 value={text}
-                onChange={(e) => {onTextChange(e.target.value)}}
+                onChange={(e) => { onTextChange(e.target.value) }}
                 placeholder="Type here"
                 style={{
                     width: "100%",

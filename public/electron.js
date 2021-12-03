@@ -166,6 +166,9 @@ ipcMain.on('download-ipc', async (event, url, options) => {
   download(win, url, options).catch(err=>console.log(err));
 });
 
+ipcMain.handle('docpath-ipc', (event) => {
+  return app.getPath("documents");
+})
 
 
 app.whenReady().then(() => {

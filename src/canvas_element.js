@@ -116,7 +116,7 @@ const URLImage = ({ x, y, width, height, src, set_shape, id }) => {
 
 export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setShape, setCursor, urls) => {
     var elem = null;
-    if (elem_desc !== null)
+    if (elem_desc)
         switch (elem_desc.name) {
             case "brush":
                 elem = <Line
@@ -218,10 +218,10 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                     shapeProps={elem_desc.shapeProps}
                     isSelected={elem_desc.id === selectedId}
                     onSelect={() => {
-                        selectShape(key);
+                        selectShape(elem_desc.id);
                     }}
                     onChange={(newAttrs) => {
-                        setShape({ ...elem_desc, shapeProps: newAttrs }, key)
+                        setShape({ ...elem_desc, shapeProps: newAttrs }, elem_desc.id)
                     }}
                 >{elem}</Transformable>;
                 break;
@@ -232,14 +232,14 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                     isSelected={elem_desc.id === selectedId}
                     id={elem_desc.id.toString()}
                     onSelect={() => {
-                        selectShape(key);
+                        selectShape(elem_desc.id);
                     }}
                     onShapeChange={(newAttrs) => {
-                        setShape({ ...elem_desc, shapeProps: newAttrs }, key)
+                        setShape({ ...elem_desc, shapeProps: newAttrs }, elem_desc.id)
                     }}
                     text={elem_desc.text}
                     onTextChange={(text) => {
-                        setShape({ ...elem_desc, text: text }, key);
+                        setShape({ ...elem_desc, text: text }, elem_desc.id);
                     }}
                 />;
                 break;
@@ -250,10 +250,10 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                     isSelected={elem_desc.id === selectedId}
 
                     onSelect={() => {
-                        selectShape(key);
+                        selectShape(elem_desc.id);
                     }}
                     onChange={(newAttrs) => {
-                        setShape({ ...elem_desc, shapeProps: newAttrs }, key)
+                        setShape({ ...elem_desc, shapeProps: newAttrs }, elem_desc.id)
                     }}
                 >
                     <URLImage x={0} y={0}
@@ -261,7 +261,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                         width={elem_desc.shapeProps.width}
                         height={elem_desc.shapeProps.height}
                         src={urls[elem_desc.fname]}
-                        set_shape={(w, h) => setShape({ ...elem_desc, shapeProps: { ...elem_desc.shapeProps, width: w, height: h } }, key)} />
+                        set_shape={(w, h) => setShape({ ...elem_desc, shapeProps: { ...elem_desc.shapeProps, width: w, height: h } }, elem_desc.id)} />
                 </Transformable>;
                 break;
             default:
