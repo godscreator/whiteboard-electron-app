@@ -129,7 +129,6 @@ export default function Whiteboard() {
     // select
 
     const [selectedId, selectShape] = useState(null);
-    const [currentShapeIndex, setCurrentShapeIndex] = useState(-1);
     const [currentShapeId, setCurrentShapeId] = useState(-1);
     const [count, setCount] = useState(0);
     const menuref = useRef(null); // reference to right click menu
@@ -197,13 +196,11 @@ export default function Whiteboard() {
 
     const get_data = () => {
         var elems = item_order.map((id, i) => items[id]);
-        console.log("elems: ", elems);
         return { elements: elems, urls: urls };
     }
 
     const insert_image = (name) => {
         add_item({ name: "image", fname: name, id: count, shapeProps: { x: 0, y: 0, width: -1, height: -1, rotation: 0 } });
-        console.log("image inserted");
     }
 
     // Toolbox 
@@ -344,8 +341,8 @@ export default function Whiteboard() {
     }
 
     const on_select_id = (id) => {
-        selectShape(id);
-        setTool({ name: "select" });
+        if(tool.name==="select")
+            selectShape(id);
     }
 
     const on_shape_change = (shape, id) => {
@@ -357,18 +354,15 @@ export default function Whiteboard() {
         <div id="container"
             onKeyDown={e => {
                 if ((e.ctrlKey || e.metaKey) && e.code === "KeyN") {
-                    console.log("new pressed");
                     if (topbarref.current) {
                         topbarref.current.new();
                     }
                 } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyO") {
-                    console.log("open pressed");
                     if (topbarref.current) {
                         topbarref.current.open();
                     }
                 }
                 else if ((e.ctrlKey || e.metaKey) && e.code === "KeyS") {
-                    console.log("save pressed");
                     if (topbarref.current) {
                         topbarref.current.save();
                     }
@@ -466,11 +460,8 @@ export default function Whiteboard() {
                         const stage = e.target.getStage();
                         if (e.target !== stage) {
                             var id = Number(e.target.id());
-                            console.log("id: ", id);
                             setCurrentShapeId(id);
-                            console.log("found id");
                             if (menuref.current) {
-                                console.log("displaying menu");
                                 var menuNode = menuref.current;
                                 menuNode.style.display = 'block';
                                 var containerRect = stage.container().getBoundingClientRect();
@@ -480,7 +471,6 @@ export default function Whiteboard() {
                                     containerRect.left + stage.getPointerPosition().x + 'px';
                             }
                         } else {
-                            setCurrentShapeIndex(-1);
                             setCurrentShapeId(-1);
                             if (menuref.current) {
                                 menuref.current.style.display = "none";
@@ -507,13 +497,6 @@ export default function Whiteboard() {
                 </Stage>
                 <div ref={menuref} id="menu">
                     <div>
-                        <button id="pulse-button"
-                            onClick={() => {
-                                console.log("pulse: ", currentShapeIndex);
-                            }}
-                        >
-                            Pulse
-                        </button>
                         <button id="delete-button"
                             onClick={(e) => {
                                 if (menuref.current) {
