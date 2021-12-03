@@ -18,21 +18,32 @@ export default function Whiteboard() {
     const [id_count, setIdCount] = useState(0);
 
 
-    const add_item = (item, to_history = true) => {
-        item.id = id_count;
-        items[id_count] = item;
-        setItems(items);
-        setItemOrder(item_order.concat([id_count]));
+    const add_item = (item, to_history = true, index = -1, id = -1) => {
+        if (id === -1) {
+            id = id_count;
+            setIdCount(id_count + 1);
+        }
+        var c_items = { ...items };
+        c_items[id] = item;
+        c_items[id].id = id;
+        setItems(c_items);
+        if (index < 0 || index >= item_order.length) {
+            setItemOrder(item_order.concat([id]));
+        } else {
+            var order = item_order.slice();
+            order.splice(index, 0, id);
+            setItemOrder(order);
+        }
+
         if (to_history)
-            add_to_history({ type: "add", id: id_count });
-        setIdCount(id_count + 1);
-        return id_count + 1;
+            add_to_history({ type: "add", id: id });
+        
+        return id;
     }
 
     const remove_item = (id, to_history = true) => {
-        if (to_history)
-            add_to_history({ type: "remove", value: items[id] });
         var c_items = { ...items };
+        var old_value = { ...c_items[id] };
         delete c_items[id];
         setItems(c_items);
         const index = item_order.indexOf(id);
@@ -41,13 +52,17 @@ export default function Whiteboard() {
             c_item_order.splice(index, 1);
         }
         setItemOrder(c_item_order);
+        if (to_history)
+            add_to_history({ type: "remove", value: old_value, index: index ,id: id});
+        return { value: old_value, index: index };
     }
 
     const change_item = (id, new_value, to_history = true) => {
-        new_value.id = id;
-        var old_value = items[id];
-        items[id] = new_value;
-        setItems(items);
+        var old_value = { ...items[id] };
+        var c_items = { ...items };
+        c_items[id] = new_value;
+        c_items[id].id = id;
+        setItems(c_items);
         if (to_history)
             add_to_history({ type: "change", id: id, old_value: old_value });
         return new_value;
@@ -65,12 +80,12 @@ export default function Whiteboard() {
         if (h) {
             switch (h.type) {
                 case "add":
-                    remove_item(h.id, false);
-                    r = { type: "add", value: items[h.id] };
+                    var { value, index } = remove_item(h.id, false);
+                    r = { type: "remove", value: value, index: index , id: h.id};
                     break;
                 case "remove":
-                    var id = add_item(h.value, false);
-                    r = { type: "remove", id: id };
+                    var id = add_item(h.value, false, h.index , h.id);
+                    r = { type: "add", id: id };
                     break;
                 case "change":
                     var new_value = change_item(h.id, h.old_value, false);
@@ -78,31 +93,36 @@ export default function Whiteboard() {
                     break;
                 default:
             }
-            setRedoHistory(redohistory.concat(r));
+            setRedoHistory(redohistory.concat([r]));
             setHistory(chistory);
         }
     }
     const redo = () => {
         var rhistory = redohistory.slice();
         var r = rhistory.pop();
+        let h;
         if (r) {
             switch (r.type) {
                 case "add":
-                    add_item(r.value);
+                    var { value, index } = remove_item(r.id, false);
+                    h = { type: "remove", value: value, index: index , id: r.id}
                     break;
                 case "remove":
-                    remove_item(r.id);
+                    var id = add_item(r.value, false, r.index, r.id);
+                    h = { type: "add", id: id }
                     break;
                 case "change":
-                    change_item(r.id, r.new_value);
+                    var old_value = change_item(r.id, r.new_value, false);
+                    h = { type: "change", id: r.id, old_value: old_value };
                     break;
                 default:
             }
             setRedoHistory(rhistory);
+            setHistory(history.concat([h]))
         }
     }
     const add_to_history = (h) => {
-        setHistory(history.concat(h));
+        setHistory(history.concat([h]));
         setRedoHistory([]);
     }
 
@@ -149,6 +169,8 @@ export default function Whiteboard() {
         setIsDrawing(false);
         selectShape(null);
         setCursor("default");
+        setHistory([]);
+        setRedoHistory([]);
     }
 
     const load_elements = (elements) => {
@@ -277,7 +299,10 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_up":
-                add_item(tempElem);
+                if (tempElem !== null && tempElem.points.length===4) {
+                    add_item(tempElem);
+                }
+                
                 setTempElem(null);
                 break;
             default:
@@ -369,10 +394,12 @@ export default function Whiteboard() {
             </div>
             <div ref={stageparentref} id="boardcanvas" className="white-board"
                 onKeyDown={e => {
+
                     if ((e.ctrlKey || e.metaKey) && e.code === "KeyZ") {
                         undo();
                     } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyR") {
                         e.preventDefault();
+                        console.log("keydown");
                         redo();
                     }
                 }}
@@ -383,36 +410,42 @@ export default function Whiteboard() {
                     width={stageparentref.current ? stageparentref.current.offsetWidth : 100}
                     height={650}
                     onMouseDown={evt => {
-
-                        setIsDrawing(true);
-                        const action = "mouse_down";
-                        const stage = evt.target.getStage();
-                        const p = stage.getPointerPosition();
-                        const point = { x: p.x, y: p.y };
-                        fn_dict[tool.name](action, point);
-                        checkDeselect(evt);
-                        if (menuref.current) {
-                            menuref.current.style.display = "none";
+                        if (evt.evt.which !== 3) {
+                            setIsDrawing(true);
+                            const action = "mouse_down";
+                            const stage = evt.target.getStage();
+                            const p = stage.getPointerPosition();
+                            const point = { x: p.x, y: p.y };
+                            fn_dict[tool.name](action, point);
+                            checkDeselect(evt);
+                            if (menuref.current) {
+                                menuref.current.style.display = "none";
+                            }
                         }
+
                     }}
                     onMousemove={evt => {
+                        if (evt.evt.which !== 3) {
+                            if (isDrawing) {
+                                const action = "mouse_move";
+                                const stage = evt.target.getStage();
+                                const p = stage.getPointerPosition();
+                                const point = { x: p.x, y: p.y };
+                                fn_dict[tool.name](action, point);
+                            }
+                        }
 
-                        if (isDrawing) {
-                            const action = "mouse_move";
+                    }}
+                    onMouseup={evt => {
+                        if (evt.evt.which !== 3) {
+                            setIsDrawing(false);
+                            const action = "mouse_up";
                             const stage = evt.target.getStage();
                             const p = stage.getPointerPosition();
                             const point = { x: p.x, y: p.y };
                             fn_dict[tool.name](action, point);
                         }
-                    }}
-                    onMouseup={evt => {
 
-                        setIsDrawing(false);
-                        const action = "mouse_up";
-                        const stage = evt.target.getStage();
-                        const p = stage.getPointerPosition();
-                        const point = { x: p.x, y: p.y };
-                        fn_dict[tool.name](action, point);
 
                     }}
                     onMouseEnter={evt => {
@@ -482,7 +515,7 @@ export default function Whiteboard() {
                             Pulse
                         </button>
                         <button id="delete-button"
-                            onClick={() => {
+                            onClick={(e) => {
                                 if (menuref.current) {
                                     menuref.current.style.display = "none";
                                 }
