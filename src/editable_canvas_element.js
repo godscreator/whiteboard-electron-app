@@ -23,7 +23,7 @@ const TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChang
                 ref={shapeRef}
 
                 {...shapeProps}
-                draggable
+                draggable={isSelected}
                 onDragStart={(e) => {
                     onSelect();
                 }}

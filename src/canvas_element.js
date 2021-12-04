@@ -22,7 +22,7 @@ const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange })
                 onTap={onSelect}
                 ref={shapeRef}
                 {...shapeProps}
-                draggable
+                draggable={isSelected}
                 onDragStart={(e) => {
                     onSelect();
                 }}
