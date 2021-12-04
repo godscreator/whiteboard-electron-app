@@ -170,7 +170,7 @@ const Topbar = forwardRef((props, ref) => {
     const export_png = async () => {
         var img_url = await props.get_image_url();
         if (img_url !== "") {
-            window.electron.download(img_url, { filename: "" });
+            window.electron.download(img_url, { filename: filename.replace(".wbrd",".png") });
         }
     }
 

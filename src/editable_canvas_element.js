@@ -1,16 +1,33 @@
-import React, { useRef, useEffect, useState } from "react";
-import { Rect, Transformer, Group, Image, Circle } from 'react-konva';
+import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import { Rect, Transformer, Group, Image} from 'react-konva';
 import { Html } from "react-konva-utils";
 import { toCanvas } from 'html-to-image';
 
-const TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChange, id }) => {
-    const shapeRef = useRef();
+const TransformableHtml = forwardRef(({ children, shapeProps, isSelected, onSelect, onChange, id },ref) => {
+    const groupRef = useRef();
     const trRef = useRef();
+    const [shape, setShape] = useState(shapeProps);
+
+    const htmlref = useRef(null);
+    const [img, setImg] = useState(null);
+    const padding = 6;
+    const remake = () => {
+        if (htmlref.current !== null) {
+            const html = htmlref.current;
+            toCanvas(html, { pixelRatio: 2 }).then((canvas) => setImg(canvas));
+        }
+    }
+    useEffect(() => {
+        remake();
+    }, []);
+    useImperativeHandle(ref, () => ({
+        "remake": () => remake()
+    }));
 
     useEffect(() => {
         if (isSelected) {
             // we need to attach transformer manually
-            trRef.current.nodes([shapeRef.current]);
+            trRef.current.nodes([groupRef.current]);
             trRef.current.getLayer().batchDraw();
         }
     }, [isSelected]);
@@ -20,33 +37,43 @@ const TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChang
             <Group
                 onClick={onSelect}
                 onTap={onSelect}
-                ref={shapeRef}
-
-                {...shapeProps}
+                ref={groupRef}
+                {...shape}
                 draggable={isSelected}
                 onDragStart={(e) => {
                     onSelect();
                 }}
-                onDragEnd={(e) => {
-                    onChange({
+                onDragMove={e => {
+                    var new_shape = {
                         ...shapeProps,
                         x: e.target.x(),
                         y: e.target.y(),
-                    });
+                    }
+                    setShape(new_shape);
                 }}
-                onTransformEnd={(e) => {
+                onDragEnd={(e) => {
+                    var new_shape = {
+                        ...shapeProps,
+                        x: e.target.x(),
+                        y: e.target.y(),
+                    }
+                    onChange(new_shape);
+                    setShape(new_shape);
+                    remake();
+                }}
+                onTransform={(e) => {
                     // transformer is changing scale of the node
                     // and NOT its width or height
                     // but in the store we have only width and height
                     // to match the data better we will reset scale on transform end
-                    const node = shapeRef.current;
+                    const node = groupRef.current;
                     const scaleX = node.scaleX();
                     const scaleY = node.scaleY();
 
                     // we will reset it back
                     node.scaleX(1);
                     node.scaleY(1);
-                    onChange({
+                    var new_shape = {
                         ...shapeProps,
                         x: node.x(),
                         y: node.y(),
@@ -54,20 +81,51 @@ const TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChang
                         width: Math.max(5, node.width() * scaleX),
                         height: Math.max(node.height() * scaleY),
                         rotation: node.rotation(),
-                    });
+                    };
+                    setShape(new_shape);
+                }}
+                onTransformEnd={(e) => {
+                    // transformer is changing scale of the node
+                    // and NOT its width or height
+                    // but in the store we have only width and height
+                    // to match the data better we will reset scale on transform end
+                    const node = groupRef.current;
+                    const scaleX = node.scaleX();
+                    const scaleY = node.scaleY();
+
+                    // we will reset it back
+                    node.scaleX(1);
+                    node.scaleY(1);
+                    var new_shape = {
+                        ...shapeProps,
+                        x: node.x(),
+                        y: node.y(),
+                        // set minimal value
+                        width: Math.max(5, node.width() * scaleX),
+                        height: Math.max(node.height() * scaleY),
+                        rotation: node.rotation(),
+                    };
+                    onChange(new_shape);
+                    setShape(new_shape);
+                    remake();
                 }}
             >
-                <Rect id={id} x={0} y={-12} width={shapeProps.width} height={shapeProps.height+ 12} cornerRadius={6} fill={"silver"} />
-                <Circle x={shapeProps.width - 8} y={-6} radius={4} fill={"red"} />
-                <ResizableHtml width={shapeProps.width} height={shapeProps.height}>
-                    {children}
-                </ResizableHtml>
+                <Rect id={id} x={0} y={-12} width={shape.width} height={shape.height + 12} cornerRadius={6} fill={"silver"} />
+                <Html divProps={{ style: { position: "absolute", left: padding + "px", top: padding + "px", width: shape.width - 2 * padding + "px", height: shape.height - 2 * padding + "px" } }}>
+                    <div ref={htmlref} style={{
+                        width: "100%",
+                        height: "100%",
+                    }}>
+                        {children}
+                    </div>
+                </Html>
+                <Image image={img} x={padding} y={padding} width={shape.width - 2 * padding} height={shape.height - 2 * padding} />
             </Group>
             {
                 isSelected && (
                     <Transformer
                         ref={trRef}
-
+                        rotateEnabled={false}
                         boundBoxFunc={(oldBox, newBox) => {
                             // limit resize
                             if (newBox.width < 5 || newBox.height < 5) {
@@ -80,52 +138,35 @@ const TransformableHtml = ({ children, shapeProps, isSelected, onSelect, onChang
             }
         </React.Fragment >
     );
-};
-
-const ResizableHtml = ({ children, width, height ,isSelected}) => {
-    const htmlref = useRef(null);
-    const [img, setImg] = useState(null);
-    const padding = 0;
-    const remake = () => {
-        if (htmlref.current !== null) {
-            const html = htmlref.current;
-            toCanvas(html, { pixelRatio: 2 }).then((canvas) => setImg(canvas));
-        }
-    }
-    useEffect(() => {
-        remake();
-    }, [width, height]);
-    useEffect(() => {
-        remake();
-    }, []);
-    return (
-        <React.Fragment>
-            <Html divProps={{ style: { position: "absolute", left: padding + "px", top: padding + "px", width: width - 2 * padding + "px", height: height - 2 * padding + "px" } }}>
-                <div ref={htmlref} style={{
-                    width: "100%",
-                    height: "100%",
-                }}>
-                    {children}
-                </div>
-            </Html>
-            <Rect x={0} y={0} width={width} height={height} fill="silver" />
-            <Image image={img} x={padding} y={padding} width={width - 2 * padding} height={height - 2 * padding} />
-        </React.Fragment>
-    );
-}
+});
 
 export const TextBox = ({ text, shapeProps, id, isSelected, onSelect, onShapeChange, onTextChange }) => {
+    const htmlref = useRef(null);
+    const textref = useRef(null);
+    useEffect(() => {
+        if (textref.current) {
+            textref.current.focus();
+        }
+    }, []);
     return (
         <TransformableHtml
+            ref={htmlref}
             shapeProps={shapeProps}
             isSelected={isSelected}
             onSelect={() => { onSelect() }}
             id={id}
             onChange={(newAttrs) => { onShapeChange(newAttrs) }}
         >
+            
             <textarea
+                ref={textref}
                 value={text}
-                onChange={(e) => { onTextChange(e.target.value) }}
+                onChange={(e) => {
+                    onTextChange(e.target.value);
+                    if (htmlref.current) {
+                        htmlref.current.remake();
+                    }
+                }}
                 placeholder="Type here"
                 style={{
                     width: "100%",
@@ -134,6 +175,7 @@ export const TextBox = ({ text, shapeProps, id, isSelected, onSelect, onShapeCha
                     outline: "none",
                 }}
             />
+            
         </TransformableHtml>
     );
 }
