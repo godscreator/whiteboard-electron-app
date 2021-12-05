@@ -509,7 +509,7 @@ export default function Whiteboard() {
                 <Stage ref={stageref}
                     style={{ cursor: cursor }}
                     width={stageparentref.current ? stageparentref.current.offsetWidth : 100}
-                    height={650}
+                    height={stageparentref.current ? stageparentref.current.offsetHeight : 100}
                     onMouseDown={evt => handle_stage_mouse_down(evt)}
                     onMousemove={evt => handle_stage_mouse_move(evt)}
                     onMouseup={evt => handle_stage_mouse_up(evt)}
