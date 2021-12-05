@@ -18,6 +18,7 @@ export default function Whiteboard() {
     const [id_count, setIdCount] = useState(0);
 
 
+    
     const add_item = (item, to_history = true, index = -1, id = -1) => {
         if (id === -1) {
             id = id_count;
@@ -350,24 +351,135 @@ export default function Whiteboard() {
         setTool({ name: "select" });
     }
 
+    // Handlers
+
+    const handle_container_key_down = e => {
+        //handles Ctrl+N, Ctrl+O and Ctrl+S
+        
+        if ((e.ctrlKey || e.metaKey) && e.code === "KeyN") {    
+            if (topbarref.current) {
+                topbarref.current.new();
+            }
+        } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyO") {
+            if (topbarref.current) {
+                topbarref.current.open();
+            }
+        }
+        else if ((e.ctrlKey || e.metaKey) && e.code === "KeyS") {
+            if (topbarref.current) {
+                topbarref.current.save();
+            }
+        }
+    }
+
+    const handle_stage_key_down = e => {
+        // Handles Ctrl+Z and Ctrl+R
+
+        if ((e.ctrlKey || e.metaKey) && e.code === "KeyZ") {
+            undo();
+        } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyR") {
+            e.preventDefault();
+            redo();
+        }
+    }
+
+    const handle_stage_mouse_down = evt => {
+        // call for the selected tool to do when mouse down
+        if (evt.evt.which !== 3) { // right click is not accepted
+            setIsDrawing(true);
+            const action = "mouse_down";
+            const stage = evt.target.getStage();
+            const p = stage.getPointerPosition();
+            const point = { x: p.x, y: p.y };
+            fn_dict[tool.name](action, point);
+            checkDeselect(evt);
+            if (menuref.current) {
+                menuref.current.style.display = "none";
+            }
+        }
+    }
+
+    const handle_stage_mouse_move = evt => {
+        // call for the selected tool to do when mouse move
+        if (evt.evt.which !== 3) { // right click is not accepted
+            if (isDrawing) {
+                const action = "mouse_move";
+                const stage = evt.target.getStage();
+                const p = stage.getPointerPosition();
+                const point = { x: p.x, y: p.y };
+                fn_dict[tool.name](action, point);
+            }
+        }
+    }
+
+    const handle_stage_mouse_up = evt => {
+        // call for the selected tool to do when mouse up
+        if (evt.evt.which !== 3) { // right click is not accepted
+            setIsDrawing(false);
+            const action = "mouse_up";
+            const stage = evt.target.getStage();
+            const p = stage.getPointerPosition();
+            const point = { x: p.x, y: p.y };
+            fn_dict[tool.name](action, point);
+        }
+    }
+
+    const handle_stage_mouse_enter = evt => {
+        // call for the selected tool to do when mouse enter the stage
+        const action = "mouse_enter";
+        const stage = evt.target.getStage();
+        const p = stage.getPointerPosition();
+        const point = { x: p.x, y: p.y };
+        fn_dict[tool.name](action, point);
+    }
+
+    const handle_stage_mouse_leave = evt => {
+        // call for the selected tool to do when mouse leave the stage
+        const action = "mouse_leave";
+        const stage = evt.target.getStage();
+        const p = stage.getPointerPosition();
+        const point = { x: p.x, y: p.y };
+        fn_dict[tool.name](action, point);
+    }
+
+    const handle_stage_on_context_menu = e => {
+        // call for the selected tool to do when right click
+        const stage = e.target.getStage();
+        if (e.target !== stage) {
+            var id = Number(e.target.id());
+            setCurrentShapeId(id);
+            if (menuref.current) {
+                var menuNode = menuref.current;
+                menuNode.style.display = 'block';
+                var containerRect = stage.container().getBoundingClientRect();
+                menuNode.style.top =
+                    containerRect.top + stage.getPointerPosition().y + 'px';
+                menuNode.style.left =
+                    containerRect.left + stage.getPointerPosition().x + 'px';
+            }
+        } else {
+            setCurrentShapeId(-1);
+            if (menuref.current) {
+                menuref.current.style.display = "none";
+            }
+        }
+    }
+
+    const handle_stage_on_delete = e => {
+        // handle when delete button of right click menu is pressed.
+        if (menuref.current) {
+            menuref.current.style.display = "none";
+        }
+        if (currentShapeId >= 0) {
+            remove_item(currentShapeId);
+            setCurrentShapeId(-1);
+        }
+    }
+
+
     return (
         <div id="container"
-            onKeyDown={e => {
-                if ((e.ctrlKey || e.metaKey) && e.code === "KeyN") {
-                    if (topbarref.current) {
-                        topbarref.current.new();
-                    }
-                } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyO") {
-                    if (topbarref.current) {
-                        topbarref.current.open();
-                    }
-                }
-                else if ((e.ctrlKey || e.metaKey) && e.code === "KeyS") {
-                    if (topbarref.current) {
-                        topbarref.current.save();
-                    }
-                }
-            }}
+            onKeyDown={e => handle_container_key_down(e)}
             tabIndex="0"
         >
             <div id="topbar">
@@ -387,96 +499,19 @@ export default function Whiteboard() {
                 <Toolbox tool={tool} onToolChangeHandler={(t) => setTool(t)} />
             </div>
             <div ref={stageparentref} id="boardcanvas" className="white-board"
-                onKeyDown={e => {
-
-                    if ((e.ctrlKey || e.metaKey) && e.code === "KeyZ") {
-                        undo();
-                    } else if ((e.ctrlKey || e.metaKey) && e.code === "KeyR") {
-                        e.preventDefault();
-                        console.log("keydown");
-                        redo();
-                    }
-                }}
+                onKeyDown={e => handle_stage_key_down(e)}
                 tabIndex="0"
             >
                 <Stage ref={stageref}
                     style={{ cursor: cursor }}
                     width={stageparentref.current ? stageparentref.current.offsetWidth : 100}
                     height={650}
-                    onMouseDown={evt => {
-                        if (evt.evt.which !== 3) {
-                            setIsDrawing(true);
-                            const action = "mouse_down";
-                            const stage = evt.target.getStage();
-                            const p = stage.getPointerPosition();
-                            const point = { x: p.x, y: p.y };
-                            fn_dict[tool.name](action, point);
-                            checkDeselect(evt);
-                            if (menuref.current) {
-                                menuref.current.style.display = "none";
-                            }
-                        }
-
-                    }}
-                    onMousemove={evt => {
-                        if (evt.evt.which !== 3) {
-                            if (isDrawing) {
-                                const action = "mouse_move";
-                                const stage = evt.target.getStage();
-                                const p = stage.getPointerPosition();
-                                const point = { x: p.x, y: p.y };
-                                fn_dict[tool.name](action, point);
-                            }
-                        }
-
-                    }}
-                    onMouseup={evt => {
-                        if (evt.evt.which !== 3) {
-                            setIsDrawing(false);
-                            const action = "mouse_up";
-                            const stage = evt.target.getStage();
-                            const p = stage.getPointerPosition();
-                            const point = { x: p.x, y: p.y };
-                            fn_dict[tool.name](action, point);
-                        }
-
-
-                    }}
-                    onMouseEnter={evt => {
-                        const action = "mouse_enter";
-                        const stage = evt.target.getStage();
-                        const p = stage.getPointerPosition();
-                        const point = { x: p.x, y: p.y };
-                        fn_dict[tool.name](action, point);
-                    }}
-                    onMouseLeave={evt => {
-                        const action = "mouse_leave";
-                        const stage = evt.target.getStage();
-                        const p = stage.getPointerPosition();
-                        const point = { x: p.x, y: p.y };
-                        fn_dict[tool.name](action, point);
-                    }}
-                    onContextMenu={e => {
-                        const stage = e.target.getStage();
-                        if (e.target !== stage) {
-                            var id = Number(e.target.id());
-                            setCurrentShapeId(id);
-                            if (menuref.current) {
-                                var menuNode = menuref.current;
-                                menuNode.style.display = 'block';
-                                var containerRect = stage.container().getBoundingClientRect();
-                                menuNode.style.top =
-                                    containerRect.top + stage.getPointerPosition().y + 'px';
-                                menuNode.style.left =
-                                    containerRect.left + stage.getPointerPosition().x + 'px';
-                            }
-                        } else {
-                            setCurrentShapeId(-1);
-                            if (menuref.current) {
-                                menuref.current.style.display = "none";
-                            }
-                        }
-                    }}
+                    onMouseDown={evt => handle_stage_mouse_down(evt)}
+                    onMousemove={evt => handle_stage_mouse_move(evt)}
+                    onMouseup={evt => handle_stage_mouse_up(evt)}
+                    onMouseEnter={evt => handle_stage_mouse_enter(evt)}
+                    onMouseLeave={evt => handle_stage_mouse_leave(evt)}
+                    onContextMenu={e => handle_stage_on_context_menu(e)}
                 >
                     <Layer>
                         {item_order.map((id, i) => to_canvas_elements(items[id], i, selectedId,
@@ -497,19 +532,7 @@ export default function Whiteboard() {
                 </Stage>
                 <div ref={menuref} id="menu">
                     <div>
-                        <button id="delete-button"
-                            onClick={(e) => {
-                                if (menuref.current) {
-                                    menuref.current.style.display = "none";
-                                }
-                                if (currentShapeId >= 0) {
-                                    remove_item(currentShapeId);
-                                    setCurrentShapeId(-1);
-                                }
-                            }}
-                        >
-                            Delete
-                        </button>
+                        <button id="delete-button" onClick={e=>handle_stage_on_delete(e)}> Delete </button>
                     </div>
                 </div>
             </div>

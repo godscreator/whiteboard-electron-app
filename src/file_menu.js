@@ -10,7 +10,7 @@ var JSZipUtils = require("jszip-utils");
 
 
 const Topbar = forwardRef((props, ref) => {
-    const [filename, setFilename] = useState("");
+    const [filename, setFilename] = useState("untitled.wbrd");
     const [folderpath, setfolderpath] = useState("");
     const [urls, setUrls] = useState([]);
 
@@ -21,7 +21,7 @@ const Topbar = forwardRef((props, ref) => {
             URL.revokeObjectURL(url);
         });
         setUrls([]);
-        setFilename("");
+        setFilename("untitled.wbrd");
     }
 
     const open_file = () => {
@@ -152,7 +152,7 @@ const Topbar = forwardRef((props, ref) => {
                 filters: [
                     { name: "WhiteBoard File", extensions: ['wbrd'] },
                 ],
-                defaultPath: "untitled"
+                defaultPath: filename
             },
                 async (filepath) => {
                     setFilename(window.electron.path_basename(filepath));
@@ -189,8 +189,12 @@ const Topbar = forwardRef((props, ref) => {
                         <input
                             type="text"
                             value={filename}
-                            onChange={(e) => setFilename(e.target.value)}
+                            onChange={(e) => {
+                                var fname = e.target.value.split(".")[0]+".wbrd";
+                                setFilename(fname);
+                            }}
                             placeholder="file name"
+                            spellCheck="false"
                             style={{resize:"none",outline:"none",height:"100%"}}
                         />
                     </Navbar.Text>
