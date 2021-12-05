@@ -18,7 +18,7 @@ export default function Whiteboard() {
     const [id_count, setIdCount] = useState(0);
 
 
-    
+
     const add_item = (item, to_history = true, index = -1, id = -1) => {
         if (id === -1) {
             id = id_count;
@@ -38,7 +38,7 @@ export default function Whiteboard() {
 
         if (to_history)
             add_to_history({ type: "add", id: id });
-        
+
         return id;
     }
 
@@ -54,7 +54,7 @@ export default function Whiteboard() {
         }
         setItemOrder(c_item_order);
         if (to_history)
-            add_to_history({ type: "remove", value: old_value, index: index ,id: id});
+            add_to_history({ type: "remove", value: old_value, index: index, id: id });
         return { value: old_value, index: index };
     }
 
@@ -82,10 +82,10 @@ export default function Whiteboard() {
             switch (h.type) {
                 case "add":
                     var { value, index } = remove_item(h.id, false);
-                    r = { type: "remove", value: value, index: index , id: h.id};
+                    r = { type: "remove", value: value, index: index, id: h.id };
                     break;
                 case "remove":
-                    var id = add_item(h.value, false, h.index , h.id);
+                    var id = add_item(h.value, false, h.index, h.id);
                     r = { type: "add", id: id };
                     break;
                 case "change":
@@ -106,7 +106,7 @@ export default function Whiteboard() {
             switch (r.type) {
                 case "add":
                     var { value, index } = remove_item(r.id, false);
-                    h = { type: "remove", value: value, index: index , id: r.id}
+                    h = { type: "remove", value: value, index: index, id: r.id }
                     break;
                 case "remove":
                     var id = add_item(r.value, false, r.index, r.id);
@@ -297,10 +297,10 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_up":
-                if (tempElem !== null && tempElem.points.length===4) {
+                if (tempElem !== null && tempElem.points.length === 4) {
                     add_item(tempElem);
                 }
-                
+
                 setTempElem(null);
                 break;
             default:
@@ -342,7 +342,7 @@ export default function Whiteboard() {
     }
 
     const on_select_id = (id) => {
-        if(tool.name==="select")
+        if (tool.name === "select")
             selectShape(id);
     }
 
@@ -355,8 +355,8 @@ export default function Whiteboard() {
 
     const handle_container_key_down = e => {
         //handles Ctrl+N, Ctrl+O and Ctrl+S
-        
-        if ((e.ctrlKey || e.metaKey) && e.code === "KeyN") {    
+
+        if ((e.ctrlKey || e.metaKey) && e.code === "KeyN") {
             if (topbarref.current) {
                 topbarref.current.new();
             }
@@ -477,6 +477,10 @@ export default function Whiteboard() {
     }
 
 
+    // Pages
+
+    const [showPages, setShowPages] = useState(false);
+
     return (
         <div id="container"
             onKeyDown={e => handle_container_key_down(e)}
@@ -498,7 +502,7 @@ export default function Whiteboard() {
             <div id="toolbox">
                 <Toolbox tool={tool} onToolChangeHandler={(t) => setTool(t)} />
             </div>
-            <div ref={stageparentref} id="boardcanvas" className="white-board"
+            <div ref={stageparentref} className="white-board"
                 onKeyDown={e => handle_stage_key_down(e)}
                 tabIndex="0"
             >
@@ -532,9 +536,10 @@ export default function Whiteboard() {
                 </Stage>
                 <div ref={menuref} id="menu">
                     <div>
-                        <button id="delete-button" onClick={e=>handle_stage_on_delete(e)}> Delete </button>
+                        <button id="delete-button" onClick={e => handle_stage_on_delete(e)}> Delete </button>
                     </div>
                 </div>
+
             </div>
         </div>
     );

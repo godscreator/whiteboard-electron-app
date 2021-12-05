@@ -170,7 +170,7 @@ const Topbar = forwardRef((props, ref) => {
     const export_png = async () => {
         var img_url = await props.get_image_url();
         if (img_url !== "") {
-            window.electron.download(img_url, { filename: filename.replace(".wbrd",".png") });
+            window.electron.download(img_url, { filename: filename.replace(".wbrd",".png"), openFolderWhenDone: true });
         }
     }
 
@@ -184,7 +184,7 @@ const Topbar = forwardRef((props, ref) => {
         <div className="top-bar">
             <Navbar expand="lg" bg="dark" variant="dark">
                 <Container>
-                    <Navbar.Brand href=".">White Board</Navbar.Brand>
+                   
                     <Navbar.Text href=".">
                         <input
                             type="text"
@@ -206,8 +206,6 @@ const Topbar = forwardRef((props, ref) => {
                                 <NavDropdown.Item onClick={() => open_file()}>Open</NavDropdown.Item>
                                 <NavDropdown.Item onClick={() => save_file()}>Save</NavDropdown.Item>
                                 <NavDropdown.Item onClick={() => export_png()}>Export PNG</NavDropdown.Item>
-                                <NavDropdown.Divider />
-                                <NavDropdown.Item href="#close">Close</NavDropdown.Item>
                             </NavDropdown>
                             <NavDropdown title="Edit" id="basic-nav-dropdown">
                                 <NavDropdown.Item onClick={() => open_image()}>Insert Image</NavDropdown.Item>

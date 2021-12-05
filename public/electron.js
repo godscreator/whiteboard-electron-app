@@ -24,6 +24,7 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
+    autoHideMenuBar: true
   });
 
   // In production, set the initial browser path to the local bundle generated
@@ -169,7 +170,6 @@ ipcMain.on('download-ipc', async (event, url, options) => {
 ipcMain.handle('docpath-ipc', (event) => {
   return app.getPath("documents");
 })
-
 
 app.whenReady().then(() => {
   if (!app.isPackaged) {
