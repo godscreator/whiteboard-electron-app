@@ -1,6 +1,9 @@
 import "./whiteboard_styles.css";
 import React, { useState, useRef } from "react";
 import { Stage, Layer } from 'react-konva';
+import Pagination from "react-bootstrap/Pagination";
+import ButtonGroup from "react-bootstrap/ButtonGroup";
+import Button from "react-bootstrap/Button";
 import Toolbox from "./toolbox.js";
 import Topbar from "./file_menu.js";
 import { to_canvas_elements } from "./canvas_element";
@@ -12,26 +15,99 @@ export default function Whiteboard() {
     const [tempElem, setTempElem] = useState(null);
     const [urls, setUrls] = useState({});
 
+    // Pages
+
+
+    const new_page = () => {
+        return {
+            items: {},
+            item_order: [],
+            id_count: 0,
+            history: [],
+            redohistory: []
+        };
+    }
+    const [pages, setPages] = useState([new_page()]);
+    const [active, setActive] = useState(0);
+
+    const insert_page = () => {
+        console.log("insert page");
+        var c_pages = pages.slice();
+        if (active < pages.length - 1) {
+            c_pages.splice(active + 1, 0, new_page());
+        } else {
+            c_pages.push(new_page());
+        }
+        setPages(c_pages);
+        setActive(active + 1);
+    };
+    const delete_page = () => {
+        console.log("delete page");
+        var c_pages = pages.slice();
+        if (pages.length === 1) {
+            c_pages.splice(active, 1, new_page());
+        } else {
+            c_pages.splice(active, 1);
+            setActive(active - 1);
+        }
+        setPages(c_pages);
+    };
+    const first_page = () => {
+        console.log("first page");
+        setActive(0);
+    };
+    const prev_page = () => {
+        console.log("prev page");
+        setActive(Math.max(0, active - 1));
+    };
+    const next_page = () => {
+        console.log("next page");
+        setActive(Math.min(active + 1, pages.length - 1));
+    };
+    const last_page = () => {
+        console.log("last page");
+        setActive(pages.length - 1);
+    };
+
     // display of items
-    const [items, setItems] = useState({});
-    const [item_order, setItemOrder] = useState([]);
-    const [id_count, setIdCount] = useState(0);
-
-
+    const get_items = () => {
+        return pages[active].items;
+    }
+    const setItems = (items) => {
+        var c_pages = pages.slice();
+        c_pages[active].items = items;
+        setPages(c_pages)
+    }
+    const get_item_order = () => {
+        return pages[active].item_order;
+    }
+    const setItemOrder = (item_order) => {
+        var c_pages = pages.slice();
+        c_pages[active].item_order = item_order;
+        setPages(c_pages);
+    }
+    const get_id_count = () => {
+        return pages[active].id_count;
+    }
+    const setIdCount = (id_count) => {
+        var c_pages = pages.slice();
+        c_pages[active].id_count = id_count;
+        setPages(c_pages);
+    }
 
     const add_item = (item, to_history = true, index = -1, id = -1) => {
         if (id === -1) {
-            id = id_count;
-            setIdCount(id_count + 1);
+            id = get_id_count();
+            setIdCount(get_id_count() + 1);
         }
-        var c_items = { ...items };
+        var c_items = { ...get_items() };
         c_items[id] = item;
         c_items[id].id = id;
         setItems(c_items);
-        if (index < 0 || index >= item_order.length) {
-            setItemOrder(item_order.concat([id]));
+        if (index < 0 || index >= get_item_order().length) {
+            setItemOrder(get_item_order().concat([id]));
         } else {
-            var order = item_order.slice();
+            var order = get_item_order().slice();
             order.splice(index, 0, id);
             setItemOrder(order);
         }
@@ -43,15 +119,17 @@ export default function Whiteboard() {
     }
 
     const remove_item = (id, to_history = true) => {
-        var c_items = { ...items };
+        var c_items = { ...get_items() };
         var old_value = { ...c_items[id] };
         delete c_items[id];
+        console.log("c_items:", c_items);
         setItems(c_items);
-        const index = item_order.indexOf(id);
-        var c_item_order = item_order.slice();
+        const index = get_item_order().indexOf(id);
+        var c_item_order = get_item_order().slice();
         if (index > -1) {
             c_item_order.splice(index, 1);
         }
+        console.log("c_items_order:", c_item_order);
         setItemOrder(c_item_order);
         if (to_history)
             add_to_history({ type: "remove", value: old_value, index: index, id: id });
@@ -59,8 +137,8 @@ export default function Whiteboard() {
     }
 
     const change_item = (id, new_value, to_history = true) => {
-        var old_value = { ...items[id] };
-        var c_items = { ...items };
+        var old_value = { ...get_items()[id] };
+        var c_items = { ...get_items() };
         c_items[id] = new_value;
         c_items[id].id = id;
         setItems(c_items);
@@ -71,11 +149,24 @@ export default function Whiteboard() {
 
 
     // undo and redo
-
-    const [history, setHistory] = useState([]);
-    const [redohistory, setRedoHistory] = useState([]);
+    const get_history = () => {
+        return pages[active].history;
+    }
+    const setHistory = (history) => {
+        var c_pages = pages.slice();
+        c_pages[active].history = history;
+        setPages(c_pages);
+    }
+    const get_redohistory = () => {
+        return pages[active].redohistory;
+    }
+    const setRedoHistory = (redohistory) => {
+        var c_pages = pages.slice();
+        c_pages[active].redohistory = redohistory;
+        setPages(c_pages);
+    }
     const undo = () => {
-        var chistory = history.slice();
+        var chistory = get_history().slice();
         var h = chistory.pop();
         let r;
         if (h) {
@@ -94,12 +185,12 @@ export default function Whiteboard() {
                     break;
                 default:
             }
-            setRedoHistory(redohistory.concat([r]));
+            setRedoHistory(get_redohistory().concat([r]));
             setHistory(chistory);
         }
     }
     const redo = () => {
-        var rhistory = redohistory.slice();
+        var rhistory = get_redohistory().slice();
         var r = rhistory.pop();
         let h;
         if (r) {
@@ -119,19 +210,18 @@ export default function Whiteboard() {
                 default:
             }
             setRedoHistory(rhistory);
-            setHistory(history.concat([h]))
+            setHistory(get_history().concat([h]))
         }
     }
     const add_to_history = (h) => {
-        setHistory(history.concat([h]));
+        setHistory(get_history().concat([h]));
         setRedoHistory([]);
     }
 
     // select
 
     const [selectedId, selectShape] = useState(null);
-    const [currentShapeId, setCurrentShapeId] = useState(-1);
-    const [count, setCount] = useState(0);
+    const [currentShapeId, setCurrentShapeId] = useState(null);
     const menuref = useRef(null); // reference to right click menu
 
     const checkDeselect = (e) => {
@@ -142,7 +232,7 @@ export default function Whiteboard() {
         }
     };
 
-
+    
 
     // filemenu
 
@@ -159,35 +249,18 @@ export default function Whiteboard() {
     }
 
     const clear = () => {
-        setItems({});
-        setItemOrder([]);
         setTempElem({});
-        setIdCount(0);
-        setCount(0);
         setUrls({});
         setTool({ name: "select" });
         setIsDrawing(false);
         selectShape(null);
         setCursor("default");
-        setHistory([]);
-        setRedoHistory([]);
+        setPages([new_page()]);
+        setActive(0);
     }
 
     const load_elements = (elements) => {
-        clear();
-        var c_items = {};
-        var c_item_order = [];
-        var c = 0;
-        var elems = elements.slice();
-        for (var i = 0; i < elems.length; i++) {
-            elems[i].id = c;
-            c_items[c] = elems[i];
-            c_item_order.push(elems[i].id);
-            c++;
-        }
-        setIdCount(c);
-        setItems(c_items);
-        setItemOrder(c_item_order);
+        setPages(elements);
     }
 
     const add_url = (name, url) => {
@@ -196,12 +269,11 @@ export default function Whiteboard() {
     }
 
     const get_data = () => {
-        var elems = item_order.map((id, i) => items[id]);
-        return { elements: elems, urls: urls };
+        return { elements: pages, urls: urls };
     }
 
     const insert_image = (name) => {
-        add_item({ name: "image", fname: name, id: count, shapeProps: { x: 0, y: 0, width: -1, height: -1, rotation: 0 } });
+        add_item({ name: "image", fname: name, id: -1, shapeProps: { x: 0, y: 0, width: -1, height: -1, rotation: 0 } });
     }
 
     // Toolbox 
@@ -214,14 +286,12 @@ export default function Whiteboard() {
         switch (action) {
 
             case "mouse_down":
-                setTempElem({ ...tool, points: [point.x, point.y], id: count });
-                setCount(count + 1);
+                setTempElem({ ...tool, points: [point.x, point.y], id: -1 });
                 break;
 
             case "mouse_move":
                 var q = tempElem.points.concat([point.x, point.y]);
-                setTempElem({ ...tool, points: q, id: count });
-                setCount(count + 1);
+                setTempElem({ ...tool, points: q, id: -1 });
                 break;
 
             case "mouse_up":
@@ -247,14 +317,12 @@ export default function Whiteboard() {
         switch (action) {
 
             case "mouse_down":
-                setTempElem({ ...tool, points: [point.x, point.y], id: count });
-                setCount(count + 1);
+                setTempElem({ ...tool, points: [point.x, point.y], id: -1 });
                 break;
 
             case "mouse_move":
                 var q = tempElem.points.concat([point.x, point.y]);
-                setTempElem({ ...tool, points: q, id: count });
-                setCount(count + 1);
+                setTempElem({ ...tool, points: q, id: -1 });
                 break;
 
             case "mouse_up":
@@ -280,8 +348,7 @@ export default function Whiteboard() {
         switch (action) {
 
             case "mouse_down":
-                setTempElem({ ...tool, points: [point.x, point.y], id: count });
-                setCount(count + 1);
+                setTempElem({ ...tool, points: [point.x, point.y], id: -1 });
                 break;
 
             case "mouse_move":
@@ -312,14 +379,10 @@ export default function Whiteboard() {
     }
 
     const text = (action, point) => {
-        selectShape(null);
+        setTempElem(null);
         switch (action) {
             case "mouse_up":
-                var new_elem = { ...tool, text: "", id: count, shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } };
-                add_item(new_elem);
-                setTool({ name: "select" });
-                selectShape(count);
-                setCount(count + 1);
+                add_item({ ...tool, text: "", shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } });
                 break;
             default:
         }
@@ -347,6 +410,7 @@ export default function Whiteboard() {
     }
 
     const on_shape_change = (shape, id) => {
+        console.log("id:", id, " shape:", shape);
         change_item(id, shape);
         setTool({ name: "select" });
     }
@@ -385,7 +449,7 @@ export default function Whiteboard() {
 
     const handle_stage_mouse_down = evt => {
         // call for the selected tool to do when mouse down
-        if (evt.evt.which !== 3) { // right click is not accepted
+        if (evt.evt.which !== 3 && currentShapeId===null) { // right click is not accepted
             setIsDrawing(true);
             const action = "mouse_down";
             const stage = evt.target.getStage();
@@ -401,7 +465,7 @@ export default function Whiteboard() {
 
     const handle_stage_mouse_move = evt => {
         // call for the selected tool to do when mouse move
-        if (evt.evt.which !== 3) { // right click is not accepted
+        if (evt.evt.which !== 3 && currentShapeId === null) { // right click is not accepted
             if (isDrawing) {
                 const action = "mouse_move";
                 const stage = evt.target.getStage();
@@ -414,7 +478,7 @@ export default function Whiteboard() {
 
     const handle_stage_mouse_up = evt => {
         // call for the selected tool to do when mouse up
-        if (evt.evt.which !== 3) { // right click is not accepted
+        if (evt.evt.which !== 3 && currentShapeId === null) { // right click is not accepted
             setIsDrawing(false);
             const action = "mouse_up";
             const stage = evt.target.getStage();
@@ -426,20 +490,25 @@ export default function Whiteboard() {
 
     const handle_stage_mouse_enter = evt => {
         // call for the selected tool to do when mouse enter the stage
-        const action = "mouse_enter";
-        const stage = evt.target.getStage();
-        const p = stage.getPointerPosition();
-        const point = { x: p.x, y: p.y };
-        fn_dict[tool.name](action, point);
+        if (currentShapeId === null) {
+            const action = "mouse_enter";
+            const stage = evt.target.getStage();
+            const p = stage.getPointerPosition();
+            const point = { x: p.x, y: p.y };
+            fn_dict[tool.name](action, point);
+        }
     }
 
     const handle_stage_mouse_leave = evt => {
         // call for the selected tool to do when mouse leave the stage
-        const action = "mouse_leave";
-        const stage = evt.target.getStage();
-        const p = stage.getPointerPosition();
-        const point = { x: p.x, y: p.y };
-        fn_dict[tool.name](action, point);
+        if (currentShapeId === null) {
+            const action = "mouse_leave";
+            const stage = evt.target.getStage();
+            const p = stage.getPointerPosition();
+            const point = { x: p.x, y: p.y };
+            fn_dict[tool.name](action, point);
+        }
+       
     }
 
     const handle_stage_on_context_menu = e => {
@@ -448,6 +517,7 @@ export default function Whiteboard() {
         if (e.target !== stage) {
             var id = Number(e.target.id());
             setCurrentShapeId(id);
+            console.log("id: ", id);
             if (menuref.current) {
                 var menuNode = menuref.current;
                 menuNode.style.display = 'block';
@@ -472,14 +542,9 @@ export default function Whiteboard() {
         }
         if (currentShapeId >= 0) {
             remove_item(currentShapeId);
-            setCurrentShapeId(-1);
+            setCurrentShapeId(null);
         }
     }
-
-
-    // Pages
-
-    const [showPages, setShowPages] = useState(false);
 
     return (
         <div id="container"
@@ -518,7 +583,7 @@ export default function Whiteboard() {
                     onContextMenu={e => handle_stage_on_context_menu(e)}
                 >
                     <Layer>
-                        {item_order.map((id, i) => to_canvas_elements(items[id], i, selectedId,
+                        {get_item_order().map((id, i) => to_canvas_elements(get_items()[id], id, selectedId,
                             on_select_id,
                             on_shape_change,
                             set_cursor,
@@ -540,6 +605,27 @@ export default function Whiteboard() {
                     </div>
                 </div>
 
+            </div>
+            <div id="pages">
+                <div id="pagenav">
+                    <Pagination size="sm">
+                        <Pagination.First onClick={() => first_page()} />
+                        <Pagination.Prev onClick={() => prev_page()} />
+                        <Pagination.Item active>{active + 1}</Pagination.Item>
+                        <Pagination.Next onClick={() => next_page()} />
+                        <Pagination.Last onClick={() => last_page()} />
+                    </Pagination>
+                </div>
+                <div id="pagebuttons">
+                    <ButtonGroup size="sm">
+                        <Button variant="outline-danger" onClick={() => delete_page()}>
+                            DeletePage
+                        </Button>
+                        <Button variant="outline-success" onClick={() => insert_page()}>
+                            Insert Page
+                        </Button>
+                    </ButtonGroup>
+                </div>
             </div>
         </div>
     );

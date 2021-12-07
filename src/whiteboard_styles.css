@@ -16,7 +16,7 @@
     "header header header " 50px
     ". . ." 10px
     "toolbox whiteboard  ." 1fr
-    ". . . " 20px
+    ". pages . " 50px
     / 2fr 18fr 10px;
   grid-gap: 5px;
   width: 100%;
@@ -60,6 +60,13 @@
   grid-area: pages;
   width: 100%;
   height: 100%;
-  
+  display: flex;
 }
-
+#pagenav{
+  grid-area: pagenav;
+  padding: 10px;
+}
+#pagebuttons{
+  grid-area: pagebuttons;
+  padding: 10px;
+}
