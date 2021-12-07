@@ -1,5 +1,5 @@
 import "./whiteboard_styles.css";
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { Stage, Layer } from 'react-konva';
 import Pagination from "react-bootstrap/Pagination";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
@@ -29,44 +29,70 @@ export default function Whiteboard() {
     }
     const [pages, setPages] = useState([new_page()]);
     const [active, setActive] = useState(0);
-
+    const [pages_images, setPagesImages] = useState([""]);
+    const get_page_image_url = () => {
+        var img_url = "";
+        if (stageref.current !== null) {
+            img_url = stageref.current.toDataURL({ pixelRatio: 2 });
+        }
+        return img_url;
+    }
+    const update_active_image = useCallback(() => {
+        var c_pages_images = pages_images.slice();
+        c_pages_images[active] = get_page_image_url();
+        setPagesImages(c_pages_images);
+    }, [active, pages_images]);
+   
     const insert_page = () => {
         console.log("insert page");
         var c_pages = pages.slice();
+        var c_pages_images = pages_images.slice();
         if (active < pages.length - 1) {
             c_pages.splice(active + 1, 0, new_page());
+            c_pages_images.splice(active + 1, 0, "");
         } else {
             c_pages.push(new_page());
+            c_pages_images.push("");
         }
+        c_pages_images[active] = get_page_image_url();
         setPages(c_pages);
+        setPagesImages(c_pages_images);
         setActive(active + 1);
     };
     const delete_page = () => {
         console.log("delete page");
         var c_pages = pages.slice();
+        var c_pages_images = pages_images.slice();
         if (pages.length === 1) {
             c_pages.splice(active, 1, new_page());
+            c_pages_images.splice(active, 1, "");
         } else {
             c_pages.splice(active, 1);
+            c_pages_images.splice(active, 1);
             setActive(active - 1);
         }
         setPages(c_pages);
+        setPagesImages(c_pages_images);
     };
     const first_page = () => {
         console.log("first page");
         setActive(0);
+        update_active_image();
     };
     const prev_page = () => {
         console.log("prev page");
         setActive(Math.max(0, active - 1));
+        update_active_image();
     };
     const next_page = () => {
         console.log("next page");
         setActive(Math.min(active + 1, pages.length - 1));
+        update_active_image();
     };
     const last_page = () => {
         console.log("last page");
         setActive(pages.length - 1);
+        update_active_image();
     };
 
     // display of items
@@ -76,7 +102,8 @@ export default function Whiteboard() {
     const setItems = (items) => {
         var c_pages = pages.slice();
         c_pages[active].items = items;
-        setPages(c_pages)
+        setPages(c_pages);
+        update_active_image();
     }
     const get_item_order = () => {
         return pages[active].item_order;
@@ -85,6 +112,7 @@ export default function Whiteboard() {
         var c_pages = pages.slice();
         c_pages[active].item_order = item_order;
         setPages(c_pages);
+        update_active_image();
     }
     const get_id_count = () => {
         return pages[active].id_count;
@@ -93,6 +121,7 @@ export default function Whiteboard() {
         var c_pages = pages.slice();
         c_pages[active].id_count = id_count;
         setPages(c_pages);
+        update_active_image();
     }
 
     const add_item = (item, to_history = true, index = -1, id = -1) => {
@@ -156,6 +185,7 @@ export default function Whiteboard() {
         var c_pages = pages.slice();
         c_pages[active].history = history;
         setPages(c_pages);
+        update_active_image();
     }
     const get_redohistory = () => {
         return pages[active].redohistory;
@@ -164,6 +194,7 @@ export default function Whiteboard() {
         var c_pages = pages.slice();
         c_pages[active].redohistory = redohistory;
         setPages(c_pages);
+        update_active_image();
     }
     const undo = () => {
         var chistory = get_history().slice();
@@ -224,14 +255,6 @@ export default function Whiteboard() {
     const [currentShapeId, setCurrentShapeId] = useState(null);
     const menuref = useRef(null); // reference to right click menu
 
-    const checkDeselect = (e) => {
-        // deselect when clicked on empty area
-        const clickedOnEmpty = e.target === e.target.getStage();
-        if (clickedOnEmpty) {
-            selectShape(null);
-        }
-    };
-
     
 
     // filemenu
@@ -239,13 +262,11 @@ export default function Whiteboard() {
     const topbarref = useRef(null);
 
     const get_image_url = () => {
-        return new Promise(async (resolve, reject) => {
-            var img_url = "";
-            if (stageref.current !== null) {
-                img_url = stageref.current.toDataURL({ pixelRatio: 2 });
-            }
-            resolve(img_url);
-        });
+        var img_url = "";
+        if (stageref.current !== null) {
+            img_url = stageref.current.toDataURL({ pixelRatio: 2 });
+        }
+        return { url: img_url, page_no: active };
     }
 
     const clear = () => {
@@ -263,13 +284,17 @@ export default function Whiteboard() {
         setPages(elements);
     }
 
+    const load_page_images = (page_images) => {
+        setPagesImages(page_images);
+    }
+
     const add_url = (name, url) => {
         urls[name] = url;
         setUrls(urls);
     }
 
     const get_data = () => {
-        return { elements: pages, urls: urls };
+        return { elements: pages, pages: pages_images, urls: urls };
     }
 
     const insert_image = (name) => {
@@ -295,7 +320,8 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_up":
-                add_item(tempElem);
+                if(tempElem!==null)
+                    add_item(tempElem);
                 setTempElem(null);
                 break;
 
@@ -326,7 +352,8 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_up":
-                add_item(tempElem);
+                if (tempElem !== null)
+                    add_item(tempElem);
                 setTempElem(null);
                 break;
 
@@ -456,7 +483,9 @@ export default function Whiteboard() {
             const p = stage.getPointerPosition();
             const point = { x: p.x, y: p.y };
             fn_dict[tool.name](action, point);
-            checkDeselect(evt);
+            if (evt.target === evt.target.getStage()) {
+                selectShape(null);
+            }
             if (menuref.current) {
                 menuref.current.style.display = "none";
             }
@@ -555,11 +584,13 @@ export default function Whiteboard() {
                 <Topbar
                     ref={topbarref}
                     load_elements={(elements) => load_elements(elements)}
+                    load_page_images={(page_images) => load_page_images(page_images)}
                     add_url={(name, url) => add_url(name, url)}
                     get_data={() => get_data()}
                     insert_image={(name) => insert_image(name)}
                     clear={() => clear()}
                     get_image_url={() => get_image_url()}
+                    page_image_urls={pages_images}
                     refresh={() => refresh()}
                 />
             </div>

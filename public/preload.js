@@ -2,6 +2,8 @@
 // It has the same sandbox as a Chrome extension.
 const { contextBridge, ipcRenderer } = require("electron");
 const path = require("path");
+const PDFDocument = require('pdfkit');
+const blobStream = require('blob-stream');
 
 // As an example, here we use the exposeInMainWorld API to expose the browsers
 // and node versions to the main window.
@@ -33,6 +35,27 @@ process.once("loaded", () => {
         },
         "path_join": (...paths) => {
             return path.join(...paths);
+        },
+        "images_to_pdf": (images, options) => {
+
+            const doc = new PDFDocument({ autoFirstPage: false });
+
+            const stream = doc.pipe(blobStream());
+
+            for (var i = 0; i < images.length; i++) {
+                var url = images[i];
+                if (url !== "") {
+                    var img = doc.openImage(url);
+                    doc.addPage({ size: [img.width, img.height] });
+                    doc.image(img, 0, 0);
+                }
+            }
+
+            doc.end();
+            stream.on('finish', function () {
+                const url = stream.toBlobURL('application/pdf');
+                ipcRenderer.send('download-ipc', url, options);
+            });
         }
     }
     );

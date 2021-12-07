@@ -9,6 +9,7 @@ var JSZip = require("jszip");
 var JSZipUtils = require("jszip-utils");
 
 
+
 const Topbar = forwardRef((props, ref) => {
     const [filename, setFilename] = useState("untitled.wbrd");
     const [folderpath, setfolderpath] = useState("");
@@ -43,6 +44,9 @@ const Topbar = forwardRef((props, ref) => {
                             zip.file("elements.json").async("string")
                                 .then(result => {
                                     props.load_elements(JSON.parse(result));
+                                    zip.file("pages.json").async("string").then(pages => {
+                                        props.load_page_images(JSON.parse(pages));
+                                    })
                                     zip.folder("images").forEach(function (filepath, file) {
                                         var uri = null;
                                         var fname = filepath;
@@ -121,9 +125,9 @@ const Topbar = forwardRef((props, ref) => {
 
     const save = async (filepath) => {
         var zip = new JSZip();
-        const { elements, urls } = props.get_data();
+        const { elements, pages, urls } = props.get_data();
         zip.file("elements.json", JSON.stringify(elements));
-
+        zip.file("pages.json", JSON.stringify(pages));
         var images = zip.folder("images");
         for (const fname in urls) {
             const url = urls[fname];
@@ -167,11 +171,15 @@ const Topbar = forwardRef((props, ref) => {
     }
 
 
-    const export_png = async () => {
-        var img_url = await props.get_image_url();
-        if (img_url !== "") {
-            window.electron.download(img_url, { filename: filename.replace(".wbrd",".png"), openFolderWhenDone: true });
+    const export_png = () => {
+        var {url, page_no} = props.get_image_url();
+        if (url !== "") {
+            window.electron.download(url, { filename: filename.replace(".wbrd", "_" + (page_no + 1)+".png"), openFolderWhenDone: true });
         }
+    }
+    const export_pdf = () => {
+        var images = props.page_image_urls;
+        window.electron.images_to_pdf(images, { filename: filename.replace(".wbrd", ".pdf"), openFolderWhenDone: true })
     }
 
     useImperativeHandle(ref, () => ({
@@ -206,6 +214,7 @@ const Topbar = forwardRef((props, ref) => {
                                 <NavDropdown.Item onClick={() => open_file()}>Open</NavDropdown.Item>
                                 <NavDropdown.Item onClick={() => save_file()}>Save</NavDropdown.Item>
                                 <NavDropdown.Item onClick={() => export_png()}>Export PNG</NavDropdown.Item>
+                                <NavDropdown.Item onClick={() => export_pdf()}>Export PDF</NavDropdown.Item>
                             </NavDropdown>
                             <NavDropdown title="Edit" id="basic-nav-dropdown">
                                 <NavDropdown.Item onClick={() => open_image()}>Insert Image</NavDropdown.Item>
