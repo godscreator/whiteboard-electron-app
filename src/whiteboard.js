@@ -42,7 +42,7 @@ export default function Whiteboard() {
         c_pages_images[active] = get_page_image_url();
         setPagesImages(c_pages_images);
     }, [active, pages_images]);
-   
+
     const insert_page = () => {
         console.log("insert page");
         var c_pages = pages.slice();
@@ -255,7 +255,7 @@ export default function Whiteboard() {
     const [currentShapeId, setCurrentShapeId] = useState(null);
     const menuref = useRef(null); // reference to right click menu
 
-    
+
 
     // filemenu
 
@@ -320,7 +320,7 @@ export default function Whiteboard() {
                 break;
 
             case "mouse_up":
-                if(tempElem!==null)
+                if (tempElem !== null)
                     add_item(tempElem);
                 setTempElem(null);
                 break;
@@ -394,8 +394,26 @@ export default function Whiteboard() {
                 if (tempElem !== null && tempElem.points.length === 4) {
                     add_item(tempElem);
                 }
-
                 setTempElem(null);
+                break;
+
+            case "mouse_leave":
+                setIsDrawing(false);
+                if (tempElem !== null && tempElem.points) {
+                    let p;
+                    if (tempElem.points.length === 2) {
+                        p = tempElem.points.concat([point.x, point.y]);
+                    } else {
+                        p = tempElem.points.slice();
+                        p[2] = point.x;
+                        p[3] = point.y;
+                    }
+                    if (tempElem !== null && p.length === 4) {
+                        add_item({ ...tempElem, points: p, shapeProps: { x: p[0], y: p[1], width: p[2] - p[0], height: p[3] - p[1], rotation: 0 } });
+                    }
+                    setTempElem(null);
+                }
+
                 break;
             default:
         }
@@ -406,10 +424,10 @@ export default function Whiteboard() {
     }
 
     const text = (action, point) => {
-        setTempElem(null);
         switch (action) {
             case "mouse_up":
-                add_item({ ...tool, text: "", shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } });
+                add_item({ ...tool, text: "", id: -1, shapeProps: { x: point.x, y: point.y, width: 100, height: 100, rotation: 0 } });
+                setTempElem(null);
                 break;
             default:
         }
@@ -476,7 +494,7 @@ export default function Whiteboard() {
 
     const handle_stage_mouse_down = evt => {
         // call for the selected tool to do when mouse down
-        if (evt.evt.which !== 3 && currentShapeId===null) { // right click is not accepted
+        if (evt.evt.which !== 3) { // right click is not accepted
             setIsDrawing(true);
             const action = "mouse_down";
             const stage = evt.target.getStage();
@@ -494,7 +512,7 @@ export default function Whiteboard() {
 
     const handle_stage_mouse_move = evt => {
         // call for the selected tool to do when mouse move
-        if (evt.evt.which !== 3 && currentShapeId === null) { // right click is not accepted
+        if (evt.evt.which !== 3) { // right click is not accepted
             if (isDrawing) {
                 const action = "mouse_move";
                 const stage = evt.target.getStage();
@@ -507,7 +525,7 @@ export default function Whiteboard() {
 
     const handle_stage_mouse_up = evt => {
         // call for the selected tool to do when mouse up
-        if (evt.evt.which !== 3 && currentShapeId === null) { // right click is not accepted
+        if (evt.evt.which !== 3) { // right click is not accepted
             setIsDrawing(false);
             const action = "mouse_up";
             const stage = evt.target.getStage();
@@ -537,7 +555,7 @@ export default function Whiteboard() {
             const point = { x: p.x, y: p.y };
             fn_dict[tool.name](action, point);
         }
-       
+
     }
 
     const handle_stage_on_context_menu = e => {
