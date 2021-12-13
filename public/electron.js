@@ -6,12 +6,13 @@ var fs = require('fs'); // Load the File System to execute our common tasks (CRU
 const { download } = require('electron-dl');
 const isDev = require("electron-is-dev");
 // Conditionally include the dev tools installer to load React Dev Tools
-let installExtension, REACT_DEVELOPER_TOOLS; // NEW!
+let installExtension, REACT_DEVELOPER_TOOLS, REDUX_DEVTOOLS; // NEW!
 
 if (isDev) {
   const devTools = require("electron-devtools-installer");
   installExtension = devTools.default;
   REACT_DEVELOPER_TOOLS = devTools.REACT_DEVELOPER_TOOLS;
+  REDUX_DEVTOOLS = devTools.REDUX_DEVTOOLS;
 } // NEW!
 
 // Create the native browser window.
@@ -24,7 +25,7 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: false
   });
 
   // In production, set the initial browser path to the local bundle generated
@@ -45,6 +46,8 @@ function createWindow() {
   }
 
   mainWindow.maximize();
+
+  
 }
 
 // This method will be called when Electron has finished its initialization and
@@ -160,6 +163,9 @@ ipcMain.handle('docpath-ipc', (event) => {
 app.whenReady().then(() => {
   if (!app.isPackaged) {
     installExtension(REACT_DEVELOPER_TOOLS)
+      .then((name) => console.log(`Added Extension:  ${name}`))
+      .catch((err) => console.log('An error occurred: ', err));
+    installExtension(REDUX_DEVTOOLS)
       .then((name) => console.log(`Added Extension:  ${name}`))
       .catch((err) => console.log('An error occurred: ', err));
   }

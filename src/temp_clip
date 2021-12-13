@@ -1,9 +1,3 @@
 stageparentref.current ? stageparentref.current.offsetWidth : 100
 stageparentref.current ? stageparentref.current.offsetHeight : 100
 
-useEffect(() => {
-    if (width < 0 && height < 0 && status === "loaded") {
-        set_shape(img.width, img.height);
-    }
-    // eslint-disable-next-line
-}, [status])

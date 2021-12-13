@@ -1,0 +1,13 @@
+export const ADD_ITEM = "ADD_ITEM";
+export const REMOVE_ITEM = "REMOVE_ITEM";
+export const CHANGE_ITEM = "CHANGE_ITEM";
+export const PUT_LAST = "PUT_LAST";
+export const INSERT_PAGE = "INSERT_PAGE";
+export const REMOVE_PAGE = "REMOVE_PAGE";
+export const CHANGE_PAGE = "CHANGE_PAGE";
+export const UPDATE_IMAGE = "UPDATE_IMAGE";
+export const UNDO = "UNDO";
+export const REDO = "REDO";
+export const LOAD = "LOAD";
+export const RESET = "RESET";
+export const ADD_URL = "ADD_URL";
