@@ -1,32 +1,9 @@
-{elems.map((line, i) => to_canvas_elements(line, i, selectedId,
-                            (k) => {
-                                selectShape(elems[k].id);
-                                setTool({ name: "select" });
-                            },
-                            (shape, k) => {
-                                var shapes = elems.slice();
-                                var temp_shape = shapes[k];
-                                shapes[k] = shape;
-                                
-                                change_item(temp_shape.id, shape);
-                                
-                                setElems(shapes);
-                                console.log("history: id: ", temp_shape.id, " prev: ", temp_shape, " now: ", shape);
-                                setTool({ name: "select" });
-                            }
-                            , set_cursor
-                            , urls
-                        ))}
-
-
-
+stageparentref.current ? stageparentref.current.offsetWidth : 100
+stageparentref.current ? stageparentref.current.offsetHeight : 100
 
 useEffect(() => {
-    if (!isSelected && htmlref.current) {
-        toCanvas(htmlref.current, { canvasWidth: width, canvasHeight: height }).then((canvas) => {
-
-            shaperef.current.image(canvas)
-        })
+    if (width < 0 && height < 0 && status === "loaded") {
+        set_shape(img.width, img.height);
     }
-}, [isSelected, width, height])
-
+    // eslint-disable-next-line
+}, [status])

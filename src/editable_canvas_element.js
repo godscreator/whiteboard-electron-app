@@ -1,9 +1,9 @@
 import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
-import { Rect, Transformer, Group, Image} from 'react-konva';
+import { Rect, Transformer, Group, Image } from 'react-konva';
 import { Html } from "react-konva-utils";
 import { toCanvas } from 'html-to-image';
 
-const TransformableHtml = forwardRef(({ children, shapeProps, isSelected, onSelect, onChange, id },ref) => {
+const TransformableHtml = forwardRef(({ children, shapeProps, isSelected, onSelect, onChange, id , keepRatio=false}, ref) => {
     const groupRef = useRef();
     const trRef = useRef();
     const [shape, setShape] = useState(shapeProps);
@@ -35,7 +35,7 @@ const TransformableHtml = forwardRef(({ children, shapeProps, isSelected, onSele
     return (
         <React.Fragment>
             <Group
-                onClick={onSelect}
+                onClick={() => { onSelect(); console.log("keep ratio: ", keepRatio); }}
                 onTap={onSelect}
                 ref={groupRef}
                 {...shape}
@@ -126,6 +126,7 @@ const TransformableHtml = forwardRef(({ children, shapeProps, isSelected, onSele
                     <Transformer
                         ref={trRef}
                         rotateEnabled={false}
+                        keepRatio={keepRatio}
                         boundBoxFunc={(oldBox, newBox) => {
                             // limit resize
                             if (newBox.width < 5 || newBox.height < 5) {
@@ -157,7 +158,7 @@ export const TextBox = ({ text, shapeProps, id, isSelected, onSelect, onShapeCha
             id={id}
             onChange={(newAttrs) => { onShapeChange(newAttrs) }}
         >
-            
+
             <textarea
                 ref={textref}
                 value={text}
@@ -175,7 +176,77 @@ export const TextBox = ({ text, shapeProps, id, isSelected, onSelect, onShapeCha
                     outline: "none",
                 }}
             />
+
+        </TransformableHtml>
+    );
+}
+
+export const Video = ({ src, shapeProps, id, isSelected, onSelect, onShapeChange }) => {
+    const htmlref = useRef(null);
+    const mediaref = useRef(null);
+    useEffect(() => {
+        if (mediaref.current) {
+            mediaref.current.focus();
+        }
+    }, []);
+    return (
+        <TransformableHtml
+            ref={htmlref}
+            shapeProps={shapeProps}
+            isSelected={isSelected}
+            onSelect={() => { onSelect() }}
+            id={id}
+            onChange={(newAttrs) => { onShapeChange(newAttrs) }}
+            keepRatio={true}
+        >
+            <video
+                ref = {mediaref}
+                controls={true}
+                style={{
+                    width: "100%",
+                    height: "100%",
+                    resize: "none",
+                    outline: "none",
+                }}
+            >
+                <source src={src} />
+            </video>
+
+        </TransformableHtml>
+    );
+}
+
+export const Audio = ({ src, shapeProps, id, isSelected, onSelect, onShapeChange }) => {
+    const htmlref = useRef(null);
+    const mediaref = useRef(null);
+    useEffect(() => {
+        if (mediaref.current) {
+            mediaref.current.focus();
+        }
+    }, []);
+    return (
+        <TransformableHtml
+            ref={htmlref}
+            shapeProps={shapeProps}
+            isSelected={isSelected}
+            onSelect={() => { onSelect() }}
+            id={id}
+            onChange={(newAttrs) => { onShapeChange(newAttrs) }}
             
+        >
+            <audio
+                ref={mediaref}
+                controls={true}
+                style={{
+                    width: "100%",
+                    height: "100%",
+                    resize: "none",
+                    outline: "none",
+                }}
+            >
+                <source src={src} />
+            </audio>
+
         </TransformableHtml>
     );
 }

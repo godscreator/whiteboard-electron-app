@@ -47,10 +47,10 @@ const Topbar = forwardRef((props, ref) => {
                                     zip.file("pages.json").async("string").then(pages => {
                                         props.load_page_images(JSON.parse(pages));
                                     })
-                                    zip.folder("images").forEach(function (filepath, file) {
+                                    zip.folder("media").forEach(function (filepath, file) {
                                         var uri = null;
                                         var fname = filepath;
-                                        zip.folder("images").file(filepath).async("blob").then(function (blob) {
+                                        zip.folder("media").file(filepath).async("blob").then(function (blob) {
                                             uri = URL.createObjectURL(blob);
                                             if (uri !== null) {
                                                 props.add_url(fname, uri);
@@ -78,11 +78,13 @@ const Topbar = forwardRef((props, ref) => {
         );
     };
 
-    const open_image = () => {
+    const open_media = () => {
         window.electron.open_dialog({
             properties: ['openFile'],
             filters: [
                 { name: "Image", extensions: ['jpg', 'png', 'jpeg'] },
+                { name: "Video", extensions: ['mp4'] },
+                { name: "Audio", extensions: ['mp3'] },
             ]
         },
             result => {
@@ -91,25 +93,57 @@ const Topbar = forwardRef((props, ref) => {
                     result => {
                         var uri = null;
                         var fname = null;
+                        var type = null;
+                        var ext = null;
                         if (filepath.endsWith(".png")) {
-                            uri = URL.createObjectURL(
-                                new Blob([result.buffer], { type: 'image/png' }));
-                            fname = uri.split('/').pop().split('#')[0].split('?')[0] + ".png";
+                            type = "image";
+                            ext = "png";
 
                         } else if (filepath.endsWith(".jpg")) {
-                            uri = URL.createObjectURL(
-                                new Blob([result.buffer], { type: 'image/jpg' }));
-                            fname = uri.split('/').pop().split('#')[0].split('?')[0] + ".jpg";
+                            type = "image";
+                            ext = "jpg";
                         }
                         else if (filepath.endsWith(".jpeg")) {
-                            uri = URL.createObjectURL(
-                                new Blob([result.buffer], { type: 'image/jpeg' }));
-                            fname = uri.split('/').pop().split('#')[0].split('?')[0] + ".jpeg";
+                            type = "image";
+                            ext = "jpeg";
+                        } else if (filepath.endsWith(".mp4")) {
+                            type = "video";
+                            ext = "mp4";
                         }
-                        if (uri !== null) {
+                        else if (filepath.endsWith(".mp3")) {
+                            type = "audio";
+                            ext = "mp3";
+                        }
+                        if (type !== null) {
+                            uri = URL.createObjectURL(
+                                new Blob([result.buffer], { type: type + "/" + ext }));
+                            fname = uri.split('/').pop().split('#')[0].split('?')[0] + "." + ext;
                             props.add_url(fname, uri);
-                            props.insert_image(fname, uri);
                             setUrls(urls.concat([uri]));
+                            switch (type) {
+                                case "image":
+                                    var img = new Image();
+                                    img.src = uri;
+                                    img.onload = function () {
+                                        props.insert_media(fname, img.width, img.height, "image");
+                                    }
+                                    break;
+                                case "video":
+                                    var vid = document.createElement("video");
+                                    vid.src = uri;
+                                    vid.onloadedmetadata = function () {
+                                        props.insert_media(fname, vid.videoWidth, vid.videoHeight, "video");
+                                    }
+                                    break;
+                                case "audio":
+                                    props.insert_media(fname, 5, 1, "audio");
+                                    break;
+                                default:
+                                    break;
+                            }
+
+
+
                         }
                     },
                     err => console.log(err)
@@ -128,7 +162,7 @@ const Topbar = forwardRef((props, ref) => {
         const { elements, pages, urls } = props.get_data();
         zip.file("elements.json", JSON.stringify(elements));
         zip.file("pages.json", JSON.stringify(pages));
-        var images = zip.folder("images");
+        var images = zip.folder("media");
         for (const fname in urls) {
             const url = urls[fname];
             try {
@@ -166,19 +200,19 @@ const Topbar = forwardRef((props, ref) => {
                 err => console.log(err)
             );
         } else {
-            save(window.electron.path_join(folderpath,filename));
+            save(window.electron.path_join(folderpath, filename));
         }
     }
 
 
     const export_png = () => {
-        var {url, page_no} = props.get_image_url();
+        var { url, page_no } = props.get_image_url();
         if (url !== "") {
-            window.electron.download(url, { filename: filename.replace(".wbrd", "_" + (page_no + 1)+".png"), openFolderWhenDone: true });
+            window.electron.download(url, { filename: filename.replace(".wbrd", "_" + (page_no + 1) + ".png"), openFolderWhenDone: true });
         }
     }
     const export_pdf = () => {
-        var images = props.page_image_urls;
+        var images = props.get_page_image_urls();
         window.electron.images_to_pdf(images, { filename: filename.replace(".wbrd", ".pdf"), openFolderWhenDone: true })
     }
 
@@ -192,18 +226,18 @@ const Topbar = forwardRef((props, ref) => {
         <div className="top-bar">
             <Navbar expand="lg" bg="dark" variant="dark">
                 <Container>
-                   
+
                     <Navbar.Text href=".">
                         <input
                             type="text"
                             value={filename}
                             onChange={(e) => {
-                                var fname = e.target.value.split(".")[0]+".wbrd";
+                                var fname = e.target.value.split(".")[0] + ".wbrd";
                                 setFilename(fname);
                             }}
                             placeholder="file name"
                             spellCheck="false"
-                            style={{resize:"none",outline:"none",height:"100%"}}
+                            style={{ resize: "none", outline: "none", height: "100%" }}
                         />
                     </Navbar.Text>
                     <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -217,7 +251,7 @@ const Topbar = forwardRef((props, ref) => {
                                 <NavDropdown.Item onClick={() => export_pdf()}>Export PDF</NavDropdown.Item>
                             </NavDropdown>
                             <NavDropdown title="Edit" id="basic-nav-dropdown">
-                                <NavDropdown.Item onClick={() => open_image()}>Insert Image</NavDropdown.Item>
+                                <NavDropdown.Item onClick={() => open_media()}>Insert Media</NavDropdown.Item>
                             </NavDropdown>
                         </Nav>
                     </Navbar.Collapse>

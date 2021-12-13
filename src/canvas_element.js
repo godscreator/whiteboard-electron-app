@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import { Line, Rect, Transformer, Group, Image, Ellipse } from 'react-konva';
 import useImage from 'use-image';
-import { TextBox } from './editable_canvas_element.js';
+import { TextBox, Video } from './editable_canvas_element.js';
 
 const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange }) => {
     const shapeRef = useRef();
@@ -94,14 +94,9 @@ const Transformable = ({ children, shapeProps, isSelected, onSelect, onChange })
         </React.Fragment >
     );
 };
-const URLImage = ({ x, y, width, height, src, set_shape, id }) => {
-    const [img, status] = useImage(src);
-    useEffect(() => {
-        if (width < 0 && height < 0 && status === "loaded") {
-            set_shape(img.width, img.height);
-        }
-        // eslint-disable-next-line
-    }, [status])
+const URLImage = ({ x, y, width, height, src, id }) => {
+    const [img] = useImage(src);
+    
     return (
         <Image
             id={id}
@@ -114,7 +109,7 @@ const URLImage = ({ x, y, width, height, src, set_shape, id }) => {
     );
 };
 
-export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setShape, setCursor, urls) => {
+export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setShape, urls) => {
     var elem = null;
     if (elem_desc)
         switch (elem_desc.name) {
@@ -243,10 +238,40 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                     }}
                 />;
                 break;
+            case "video":
+                elem = <Video
+                    key={key}
+                    shapeProps={elem_desc.shapeProps}
+                    isSelected={elem_desc.id === selectedId}
+                    id={elem_desc.id.toString()}
+                    onSelect={() => {
+                        selectShape(elem_desc.id);
+                    }}
+                    onShapeChange={(newAttrs) => {
+                        setShape({ ...elem_desc, shapeProps: newAttrs }, elem_desc.id)
+                    }}
+                    src={urls[elem_desc.fname]}
+                />;
+                break;
+            case "audio":
+                elem = <Video
+                    key={key}
+                    shapeProps={elem_desc.shapeProps}
+                    isSelected={elem_desc.id === selectedId}
+                    id={elem_desc.id.toString()}
+                    onSelect={() => {
+                        selectShape(elem_desc.id);
+                    }}
+                    onShapeChange={(newAttrs) => {
+                        setShape({ ...elem_desc, shapeProps: newAttrs }, elem_desc.id)
+                    }}
+                    src={urls[elem_desc.fname]}
+                />;
+                break;
             case "image":
                 elem = <Transformable
                     key={key + ": Transformable"}
-                    shapeProps={elem_desc.shapeProps > 0 ? { ...elem_desc.shapeProps, width: 100, height: 100 } : elem_desc.shapeProps}
+                    shapeProps={elem_desc.shapeProps}
                     isSelected={elem_desc.id === selectedId}
 
                     onSelect={() => {
@@ -261,7 +286,7 @@ export const to_canvas_elements = (elem_desc, key, selectedId, selectShape, setS
                         width={elem_desc.shapeProps.width}
                         height={elem_desc.shapeProps.height}
                         src={urls[elem_desc.fname]}
-                        set_shape={(w, h) => setShape({ ...elem_desc, shapeProps: { ...elem_desc.shapeProps, width: w, height: h } }, elem_desc.id)} />
+                    />
                 </Transformable>;
                 break;
             default:
