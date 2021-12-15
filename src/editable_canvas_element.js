@@ -35,7 +35,7 @@ const TransformableHtml = forwardRef(({ children, shapeProps, isSelected, onSele
     return (
         <React.Fragment>
             <Group
-                onClick={() => { onSelect(); console.log("keep ratio: ", keepRatio); }}
+                onClick={() => { onSelect() }}
                 onTap={onSelect}
                 ref={groupRef}
                 {...shape}

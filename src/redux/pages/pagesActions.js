@@ -10,8 +10,7 @@ import {
     UNDO,
     REDO,
     LOAD,
-    RESET,
-    ADD_URL
+    RESET
 } from "./pagesTypes";
 
 export const addItem = (item) => {
@@ -79,11 +78,5 @@ export const load = (elements,pages_images) => {
 export const reset = () => {
     return {
         type: RESET
-    }
-}
-export const addUrl = (fname,url) => {
-    return {
-        type: ADD_URL,
-        payload: {fname:fname,url:url}
     }
 }

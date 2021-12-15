@@ -10,4 +10,3 @@ export const UNDO = "UNDO";
 export const REDO = "REDO";
 export const LOAD = "LOAD";
 export const RESET = "RESET";
-export const ADD_URL = "ADD_URL";

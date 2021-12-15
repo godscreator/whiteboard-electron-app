@@ -11,7 +11,6 @@ import {
     REDO,
     LOAD,
     RESET,
-    ADD_URL
 } from "./pagesTypes";
 
 
@@ -35,8 +34,7 @@ const reset_pages = () => {
     return {
         pages: [new_page()],
         active: 0,
-        pages_images: [""],
-        urls: {}
+        pages_images: [""]
     };
 }
 
@@ -132,11 +130,7 @@ const put_last = (pages, active, id) => {
     return c_pages;
 }
 
-const add_url = (urls, fname, url) => {
-    var c_urls = { ...urls };
-    c_urls[fname] = url;
-    return c_urls;
-}
+
 
 // undo and redo
 
@@ -183,18 +177,17 @@ const load = (elements,pages_images) => {
         tmp.id_count = c;
         c_pages.push(tmp);
     }
-    return { pages: c_pages, active: Math.max(0, c_pages.length - 1), pages_images: pages_images.slice() , urls: {}};
+    return { pages: c_pages, active: Math.max(0, c_pages.length - 1), pages_images: pages_images.slice()};
 }
 
 const initialState = {
     pages: [new_page()],
     active: 0,
     pages_images: [""],
-    urls: {}
 };
 
 const pagesReducer = (state = initialState, action) => {
-    const { pages, active, pages_images, urls } = state;
+    const { pages, active, pages_images } = state;
     switch (action.type) {
         case UPDATE_IMAGE:
             const c_pages_images0 = update_active_image(pages_images, active, action.payload.dataUrl);
@@ -256,12 +249,7 @@ const pagesReducer = (state = initialState, action) => {
         case RESET:
             const c_state11 = reset_pages();
             return c_state11;
-        case ADD_URL:
-            const c_urls12 = add_url(urls, action.payload.fname,action.payload.url);
-            return {
-                ...state,
-                urls: c_urls12
-            };
+        
         
         default: return state
     }

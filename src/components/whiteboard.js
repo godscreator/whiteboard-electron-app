@@ -42,7 +42,7 @@ export default function Whiteboard() {
     const active = useSelector(state => state.pages.active);
     const items = useSelector(state => state.pages.pages[state.pages.active].items);
     const item_order = useSelector(state => state.pages.pages[state.pages.active].item_order);
-    const urls = useSelector(state => state.pages.urls);
+    const urls = useSelector(state => state.currentFile.urls);
     
     const dispatch = useDispatch();
     const add_item = item => dispatch(addItem(item));
@@ -67,23 +67,6 @@ export default function Whiteboard() {
         setTool({ name: "select" });
         setIsDrawing(false);
         selectShape(null);
-    }
-
-    const insert_media = (name, width, height, type) => {
-        switch (type) {
-            case "image":
-                add_item({ name: "image", fname: name, id: -1, shapeProps: { x: 20, y: 20, width: (width * 200) / height, height: 200, rotation: 0 } });
-                break;
-            case "video":
-                add_item({ name: "video", fname: name, id: -1, shapeProps: { x: 20, y: 20, width: (width * 200) / height, height: 200, rotation: 0 } });
-                break;
-            case "audio":
-                add_item({ name: "audio", fname: name, id: -1, shapeProps: { x: 20, y: 20, width: 500, height: 50, rotation: 0 } });
-                break;
-            default:
-                break;
-        }
-
     }
 
     // Toolbox 
@@ -365,7 +348,6 @@ export default function Whiteboard() {
             <div id="topbar">
                 <Topbar
                     ref={topbarref}
-                    insert_media={(name, width, height, type) => insert_media(name, width, height, type)}
                     clear={() => clear()}
                     get_image_url={() => get_image_url()}
                     refresh={() => refresh()}

@@ -4,7 +4,7 @@ export const getPagesData = () => {
     const state = store.getState();
     const pages = state.pages.pages;
     const pages_images = state.pages.pages_images;
-    const urls = state.pages.urls;
+    const urls = state.currentFile.urls;
     var c_urls = {};
     var elements = [];
     for (let p = 0; p < pages.length; p++) {
@@ -20,7 +20,7 @@ export const getPagesData = () => {
         }
         elements.push(tmp);
     }
-    return { elements: elements, pages: pages_images, urls: urls };
+    return { elements: elements, pages: pages_images, urls: c_urls };
 }
 
 export * from './pages/pagesActions'
