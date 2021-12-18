@@ -106,38 +106,51 @@ export const openFile = () => {
 
                 window.electron.read_file(filepath, null,
                     result => {
+                        console.log("reading file");
                         JSZip.loadAsync(result)
                             .then(zip => {
                                 zip.file("elements.json").async("string")
                                     .then(result => {
                                         const elements = JSON.parse(result);
+                                        console.log("read elements");
                                         zip.file("pages.json").async("string")
                                             .then(pages => {
                                                 const pages_images = JSON.parse(pages);
+                                                console.log("read pages images");
                                                 zip.file("media.json").async("string")
                                                     .then(_fnames => {
                                                         const fnames = JSON.parse(_fnames);
+                                                        console.log("read fnames:",fnames.length);
+
                                                         var count = 0;
                                                         var urls = {};
-                                                        zip.folder("media").forEach(function (filepath, file) {
-                                                            var uri = null;
-                                                            var fname = filepath;
+                                                        if (fnames.length > 0) {
+                                                            zip.folder("media").forEach(function (filepath, file) {
+                                                                var uri = null;
+                                                                var fname = filepath;
 
-                                                            zip.folder("media").file(filepath).async("blob").then(function (blob) {
-                                                                uri = URL.createObjectURL(blob);
-                                                                if (uri !== null) {
-                                                                    console.log("loaded: ", fname, uri);
-                                                                    urls[fname] = uri;
-                                                                }
-                                                                count += 1;
-                                                                if (count === fnames.length) {
-                                                                    console.log("The file is loading.");
-                                                                    dispatch(openFileSuccess({ urls: urls }));
-                                                                    dispatch(load(elements, pages_images));
-                                                                    console.log("The file is loaded.");
-                                                                }
+                                                                zip.folder("media").file(filepath).async("blob").then(function (blob) {
+                                                                    uri = URL.createObjectURL(blob);
+                                                                    if (uri !== null) {
+                                                                        console.log("loaded: ", fname, uri);
+                                                                        urls[fname] = uri;
+                                                                    }
+                                                                    count += 1;
+                                                                    if (count === fnames.length) {
+                                                                        console.log("The file is loading.");
+                                                                        dispatch(openFileSuccess({ urls: urls }));
+                                                                        dispatch(load(elements, pages_images));
+                                                                        console.log("The file is loaded.");
+                                                                    }
+                                                                });
                                                             });
-                                                        });
+                                                        } else {
+                                                            console.log("The file is loading.");
+                                                            dispatch(openFileSuccess({ urls: urls }));
+                                                            dispatch(load(elements, pages_images));
+                                                            console.log("The file is loaded.");
+                                                        }
+                                                        
                                                     }).catch(err => {
                                                         console.log(err);
                                                         dispatch(openFileFailure(err));

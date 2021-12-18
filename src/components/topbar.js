@@ -42,15 +42,15 @@ const Topbar = forwardRef((props, ref) => {
 
     const open_file = () => {
         new_file();
-        openFile()(dispatch);
+        dispatch(openFile());
     };
 
     const open_media = () => {
-        insertMedia()(dispatch);
+        dispatch(insertMedia());
     };
 
     const save_file = () => {
-        saveFile(c_folderpath, filename, getPagesData())(dispatch);
+        dispatch(saveFile(c_folderpath, filename, getPagesData()));
     }
 
 
